@@ -1,0 +1,5 @@
+#python缓存
+__pycache__
+
+#测试
+tests/*
