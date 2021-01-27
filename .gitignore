@@ -3,3 +3,6 @@ __pycache__
 
 #测试
 tests/*
+
+#VSCode插件
+.VSCode*/

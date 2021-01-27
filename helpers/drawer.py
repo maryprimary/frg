@@ -11,7 +11,15 @@ from basics import Square, Rectangle, Segment, Point
 
 def draw_points(pts: List[Point]):
     '''绘制散点图'''
-    raise NotImplementedError('没做')
+    pyplot.figure()
+    xvals = []
+    yvals = []
+    for pnt in pts:
+        xvals.append(pnt.coord[0])
+        yvals.append(pnt.coord[1])
+    pyplot.scatter(xvals, yvals, lw=4)
+    pyplot.show()
+
 
 def draw_lines(sgs: List[Segment]):
     '''绘制一组线'''
@@ -23,6 +31,7 @@ def draw_lines(sgs: List[Segment]):
         yvals = [_pt.coord[1] for _pt in seg.ends]
         pyplot.plot(xvals, yvals)
     pyplot.show()
+
 
 def draw_polygons(rects):
     '''绘制一组正方形'''
