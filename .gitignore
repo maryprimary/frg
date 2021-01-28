@@ -3,6 +3,8 @@ __pycache__
 
 #测试
 tests/*
+scripts/*
+!scripts/square_brillouin.py
 
 #VSCode插件
 .VSCode*/
