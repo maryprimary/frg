@@ -7,6 +7,7 @@
 #        raise NotImplementedError('没有实现')
 
 from typing import Tuple
+import numpy
 from .point import Point
 
 class Segment():
@@ -15,6 +16,13 @@ class Segment():
         self._pt1 = pt1
         self._pt2 = pt2
         self._iteridx = 0
+        if pt1.typeid == 1 and pt2.typeid == 1:
+            self._length = numpy.sqrt(
+                numpy.square(pt1.coord[0] - pt2.coord[0]) +
+                numpy.square(pt1.coord[1] - pt2.coord[1])
+            )
+        else:
+            self._length = None
 
     def __str__(self):
         return "{Segment:\n\t" +\
@@ -27,6 +35,11 @@ class Segment():
     def ends(self) -> Tuple[Point, Point]:
         '''线段的两个端点'''
         return [self._pt1, self._pt2]
+
+    @property
+    def length(self):
+        '''长度'''
+        return self._length
 
     #def __getitem__(self, idx):
     #    if idx == 1:

@@ -1,19 +1,15 @@
 """计算费米面上点的位置"""
 
+
 import numpy
 from scipy import optimize
 from basics import Square, Point
-from .brillouin import dispersion, dispersion_gradient
 
-def get_patches(brlu: Square, npatch, disp):
+
+def get_patches(brlu: Square, npatch, dispfun):
     '''获得费米面上面的patch\n
-    disp是色散关系\n
-    square: 普通的正方格子\n
+    dispfun是色散关系\n
     '''
-    #色散关系
-    dispfun = {
-        'square': dispersion
-    }[disp]
     gap = numpy.pi * 2 / npatch
     angles = [gap * (idx + 0.5) for idx in range(npatch)]
     #解出每个角度下和费米面的交点
@@ -39,15 +35,10 @@ def get_patches(brlu: Square, npatch, disp):
     return patches
 
 
-def find_patch(pnt: Point, patches, disp):
-    '''找到这个点是属于哪个patch的'''
-    #色散关系的梯度
-    dispfun = {
-        'square': dispersion
-    }[disp]
-    dispgdfun = {
-        'square': dispersion_gradient
-    }[disp]
+def find_patch(pnt: Point, patches, dispfun, dispgdfun):
+    '''找到这个点是属于哪个patch的\n
+    dispfun是色散关系的函数，dispgdfun是向费米面投影的梯度\n
+    '''
     #从这个点引出一条直线
     kxv, kyv = pnt.coord
     cita = dispgdfun(kxv, kyv)
@@ -74,7 +65,8 @@ def find_patch(pnt: Point, patches, disp):
         if numpy.sign(__disp_by_dis(gsign * gues)) != intsign:
             break
         gues += 0.01
-    rootd = optimize.bisect(__disp_by_dis, 0., gues * gsign)
+    #这个时候gues已经反号，而gues-0.01还没有
+    rootd = optimize.bisect(__disp_by_dis, (gues-0.01) * gsign, gues * gsign)
     crsx = kxv + rootd * numpy.cos(cita)
     crsy = kyv + rootd * numpy.sin(cita)
     dis_to_patch = [numpy.square(crsx - pat.coord[0]) +\

@@ -1,4 +1,4 @@
-"""正方格子的布里渊区"""
+"""正方格子的有关内容"""
 
 import numpy
 from basics import Square, Point, Segment
@@ -26,3 +26,14 @@ def dispersion_gradient(kxv, kyv):
         return numpy.pi / 2
     slope = slope_num / slope_den
     return numpy.arctan(slope)
+
+
+def shift_kv(kpt: Point, sft: Point) -> Point:
+    '''将一个k点平移，然后重新对应到第一布里渊区'''
+    dest = [kpt.coord[idx] + sft.coord[idx] for idx in range(2)]
+    while numpy.abs(dest[0]) > numpy.pi:
+        #如果大于第一布里渊区就向零靠拢2pi
+        dest[0] -= numpy.sign(dest[0]) * numpy.pi * 2
+    while numpy.abs(dest[1]) > numpy.pi:
+        dest[1] -= numpy.sign(dest[1]) * numpy.pi * 2
+    return Point(dest[0], dest[1], 1)
