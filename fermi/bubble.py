@@ -110,7 +110,7 @@ def pi_minus_ec(posi, nega, lamb, qval, disp, ksft):
         nega_k = Point(-kval.coord[0], -kval.coord[1], 1)
         kprim = ksft(nega_k, qval)
         #CITA
-        disp_kprim = disp_kprim(kprim.coord[0], kprim.coord[1])
+        disp_kprim = disp(kprim.coord[0], kprim.coord[1])
         if -disp_kprim < lamb:
             continue
         intnega += edg.length / (lamb - disp_kprim)

@@ -5,6 +5,8 @@ __pycache__
 tests/*
 scripts/*
 !scripts/square_brillouin.py
+!scripts/square_solution.py
+heatmap
 
 #VSCode插件
 .VSCode*/

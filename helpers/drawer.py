@@ -52,3 +52,16 @@ def draw_polygons(rects):
     pyplot.gca().relim()
     pyplot.gca().autoscale_view()
     pyplot.show()
+
+
+def draw_heatmap(arra, save='show'):
+    '''绘制一个热度图'''
+    pyplot.figure()
+    axe = pyplot.gca()
+    img = axe.imshow(arra, cmap='RdBu')
+    cbar = axe.figure.colorbar(img, ax=axe)
+    cbar.ax.set_ylabel('', rotation=-90, va="bottom")
+    if save == "show":
+        pyplot.show()
+    else:
+        pyplot.savefig(save)
