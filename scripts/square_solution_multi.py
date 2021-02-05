@@ -1,7 +1,8 @@
-"""求解frg方程"""
+"""多线程版本的解方程"""
 
 import os
 #import cProfile
+import multiprocessing
 import argparse
 import numpy
 #格子的相关功能
@@ -49,23 +50,29 @@ def slove_equ(args, ltris, ladjs, pinfo, lpats):
         disp, dispgd, shift_kv, 4.
     )
     #输出文件夹
-    if not os.path.isdir('heatmap'):
-        os.mkdir('heatmap')
+    if not os.path.isdir('heatmap2'):
+        os.mkdir('heatmap2')
     lval = 0.
     lstep = 0.01
-    draw_heatmap(hubbard.U[:, :, 0], save='heatmap/{:.2f}.jpg'.format(lval))
-    for _ in range(400):
-        duval = numpy.zeros_like(hubbard.U)
+    draw_heatmap(hubbard.U[:, :, 0], save='heatmap2/{:.2f}.jpg'.format(lval))
+    for _ in range(600):
+        #duval = numpy.zeros_like(hubbard.U)
+        #进程池
+        pool = multiprocessing.Pool(4)
         #计算每个idx的导数
+        data_list = []
         for idx1 in range(args.patches):
             for idx2 in range(args.patches):
                 for idx3 in range(args.patches):
-                    duval[idx1, idx2, idx3] = hubbard.dl_ec(lval, idx1, idx2, idx3)
+                    data_list.append((lval, idx1, idx2, idx3))
+                    #duval[idx1, idx2, idx3] = hubbard.dl_ec(lval, idx1, idx2, idx3)
+        result = pool.starmap(hubbard.dl_ec, data_list)
+        duval = numpy.reshape(result, (args.patches, args.patches, args.patches))
         #把每个idx的值加上
         #这两个过程不能放在一起，因为计算dl_ec的时候用到了hubbard.U
         hubbard.U += duval * lstep
         lval += lstep
-        draw_heatmap(hubbard.U[:, :, 0], save='heatmap/{:.2f}.jpg'.format(lval))
+        draw_heatmap(hubbard.U[:, :, 0], save='heatmap2/{:.2f}.jpg'.format(lval))
 
 
 def main():
@@ -90,4 +97,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-    #cProfile.run('main()', 'profile/single.raw')
+    #cProfile.run('main()', 'profile/multi.raw')

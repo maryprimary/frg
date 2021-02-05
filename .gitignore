@@ -6,7 +6,15 @@ tests/*
 scripts/*
 !scripts/square_brillouin.py
 !scripts/square_solution.py
+!scripts/square_solution_multi.py
 heatmap
+heatmap2
+
+#性能分析
+profile/*
+!profile/analysis.py
+!profile/multi*
+!profile/single*
 
 #VSCode插件
 .VSCode*/

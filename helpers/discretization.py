@@ -27,6 +27,7 @@ def patches_visualize(pats, lsurface, show):
         pyplot.show()
     else:
         pyplot.savefig(show)
+    pyplot.close()
 
 
 def district_visualize(ltris, lpatches, show):
@@ -54,6 +55,7 @@ def district_visualize(ltris, lpatches, show):
         pyplot.show()
     else:
         pyplot.savefig(show)
+    pyplot.close()
 
 
 def save_to(fname, lpatches):

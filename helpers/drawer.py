@@ -65,3 +65,4 @@ def draw_heatmap(arra, save='show'):
         pyplot.show()
     else:
         pyplot.savefig(save)
+    pyplot.close()
