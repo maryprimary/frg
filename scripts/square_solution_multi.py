@@ -55,7 +55,7 @@ def slove_equ(args, ltris, ladjs, pinfo, lpats):
     lval = 0.
     lstep = 0.01
     draw_heatmap(hubbard.U[:, :, 0], save='heatmap2/{:.2f}.jpg'.format(lval))
-    for _ in range(600):
+    for _ in range(320):
         #duval = numpy.zeros_like(hubbard.U)
         #进程池
         pool = multiprocessing.Pool(4)
