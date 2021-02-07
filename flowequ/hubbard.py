@@ -48,6 +48,7 @@ class _Config():
     def __init__(self, ltris, ladjs, pinfo, lpats, disp, dispgd,\
         ksft, lamb0):
         self._ltris = ltris
+        self._nps = numpy.sqrt(len(ltris)) / 2
         self._ladjs = ladjs
         self._pinfo = pinfo
         self._lpats = lpats
@@ -67,9 +68,15 @@ class _Config():
                     kv1, kv2, kv3 = pinfo[idx1], pinfo[idx2], pinfo[idx3]
                     kv4 = ksft(ksft(kv1, kv2), Point(-kv3.coord[0], -kv3.coord[1], 1))
                     #这里的投影是向Umklapp的
-                    #TODO: 优化这里的逻辑，色散关系和投影表面可以不是一个
-                    #可以考虑的方法是找到距离kv4最近的Rtriangle，然后从lpats中找到idx4
-                    idx4 = find_patch(kv4, pinfo, dispersion, dispgd)
+                    #这种方法运算速度显然比find_patch要慢
+                    #故不采用
+                    #dislist = [numpy.square(tri.center.coord[0] - kv4.coord[0]) +\
+                    #    numpy.square(tri.center.coord[1] - kv4.coord[1])\
+                    #    for tri in self._ltris]
+                    #idx4_ = numpy.argmin(dislist)
+                    #idx4_ = self._lpats[idx4_]
+                    idx4 = find_patch(kv4, pinfo, disp, dispgd, numpy.pi / 2 / self._nps)
+                    #assert idx4_ == idx4
                     self._k4tab[idx1, idx2, idx3] = idx4
         #初始化
 
