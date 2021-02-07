@@ -34,10 +34,10 @@ def precompute(args):
     patches_visualize(pats, lsur, '{0}_surface_{1}.svg'.format(args.prefix, args.disp))
     #求出每个Rtriangle所在的patch
     #这种投影法把交点设置在Umklapp surface
-    lpats = [find_patch(tri.center, pats, dispersion, dispgd) for tri in ltris]
+    step = 3.1415927 / args.mesh / 2
+    lpats = [find_patch(tri.center, pats, disp, dispgd, step) for tri in ltris]
     dis_save_to('{0}_district_{1}.txt'.format(args.prefix, args.disp), lpats)
     district_visualize(ltris, lpats, '{0}_patches_{1}.svg'.format(args.prefix, args.disp))
-
 
 
 def main():
