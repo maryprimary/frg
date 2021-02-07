@@ -15,6 +15,12 @@ def dispersion(kxv, kyv):
     return -2 * (numpy.cos(kxv) + numpy.cos(kyv))
 
 
+def hole_disp(kxv, kyv):
+    '''色散关系\n
+    kxv是x方向的动量，kyv是y方向的动量'''
+    return -2 * (numpy.cos(kxv) + numpy.cos(kyv)) + 0.2
+
+
 def dispersion_gradient(kxv, kyv):
     '''色散关系的梯度切线\n
     返回一个角度，这个角度是从这个kx引出的线的角度\n

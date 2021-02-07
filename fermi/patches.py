@@ -35,7 +35,68 @@ def get_patches(brlu: Square, npatch, dispfun):
     return patches
 
 
-def find_patch(pnt: Point, patches, dispfun, dispgdfun):
+def find_patch(pnt: Point, patches, dispfun, dispgdfun, step):
+    '''找到这个点是属于哪个patch的\n
+    dispfun是色散关系的函数，dispgdfun是向费米面投影的梯度\n
+    注意这个step最好小于pi / 2 * mesh
+    '''
+    #从这个点引出一条线，如果两端反号，则停止
+    kxv, kyv = pnt.coord
+    olddisp = dispfun(kxv, kyv)
+    while True:
+        cita = dispgdfun(kxv, kyv)
+        #确定方向
+        kxp = kxv + step * numpy.cos(cita)
+        kyp = kyv + step * numpy.sin(cita)
+        #大于pi就贴边
+        if numpy.abs(kxp) > numpy.pi:
+            kxp = numpy.sign(kxp) * numpy.pi
+        if numpy.abs(kyp) > numpy.pi:
+            kyp = numpy.sign(kyp) * numpy.pi
+        newdispp = dispfun(kxp, kyp)
+        #另一个方向
+        kxn = kxv - step * numpy.cos(cita)
+        kyn = kyv - step * numpy.sin(cita)
+        if numpy.abs(kxn) > numpy.pi:
+            kxn = numpy.sign(kxn) * numpy.pi
+        if numpy.abs(kyn) > numpy.pi:
+            kyn = numpy.sign(kyn) * numpy.pi
+        newdispn = dispfun(kxn, kyn)
+        #反号
+        if newdispp * olddisp < 0:
+            gsign = +1
+            break
+        if newdispn * olddisp < 0:
+            gsign = -1
+            break
+        #看谁下降得快
+        #如果p方向下降的快
+        if numpy.abs(newdispn) > numpy.abs(newdispp):
+            kxv, kyv = kxp, kyp
+        else:#如果n方向下降的快
+            kxv, kyv = kxn, kyn
+        if numpy.abs(kxv) > numpy.pi or numpy.abs(kyv) > numpy.pi:
+            raise ValueError('出界了')
+    #现在kxv，kyv向cita方向step长度的符号是不同的
+    def __disp_by_dis(dis):
+        '''从pnt这个点沿着slope走dis这么长的位置上的能量'''
+        xdis = kxv + dis * numpy.cos(cita)
+        ydis = kyv + dis * numpy.sin(cita)
+        if numpy.abs(xdis) > numpy.pi:
+            xdis = numpy.sign(xdis) * numpy.pi
+        if numpy.abs(ydis) > numpy.pi:
+            ydis = numpy.sign(ydis) * numpy.pi
+        return dispfun(xdis, ydis)
+    rootd = optimize.bisect(__disp_by_dis, 0, gsign * step)
+    crsx = kxv + rootd * numpy.cos(cita)
+    crsy = kyv + rootd * numpy.sin(cita)
+    dis_to_patch = [numpy.square(crsx - pat.coord[0]) +\
+        numpy.square(crsy - pat.coord[1])\
+        for pat in patches]
+    return numpy.argmin(dis_to_patch)
+
+
+def find_patch_old(pnt: Point, patches, dispfun, dispgdfun):
     '''找到这个点是属于哪个patch的\n
     dispfun是色散关系的函数，dispgdfun是向费米面投影的梯度\n
     '''
@@ -64,6 +125,9 @@ def find_patch(pnt: Point, patches, dispfun, dispgdfun):
         #如果已经穿过了费米面就停下
         if numpy.sign(__disp_by_dis(gsign * gues)) != intsign:
             break
+        #如果始终没有穿过费米面
+        if numpy.abs(gues) > numpy.pi*4:
+            raise ValueError(str(pnt) + str(cita) + ' 没有穿过Umklapp')
         gues += 0.01
     #这个时候gues已经反号，而gues-0.01还没有
     rootd = optimize.bisect(__disp_by_dis, (gues-0.01) * gsign, gues * gsign)
