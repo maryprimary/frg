@@ -5,6 +5,7 @@
 
 import numpy
 from basics import Point
+from fermi.square import dispersion
 from fermi.patches import find_patch
 from fermi.surface import const_energy_line_in_patches
 from fermi.bubble import pi_plus_ec, pi_minus_ec
@@ -65,7 +66,10 @@ class _Config():
                 for idx3 in range(self._patchnum):
                     kv1, kv2, kv3 = pinfo[idx1], pinfo[idx2], pinfo[idx3]
                     kv4 = ksft(ksft(kv1, kv2), Point(-kv3.coord[0], -kv3.coord[1], 1))
-                    idx4 = find_patch(kv4, pinfo, disp, dispgd)
+                    #这里的投影是向Umklapp的
+                    #TODO: 优化这里的逻辑，色散关系和投影表面可以不是一个
+                    #可以考虑的方法是找到距离kv4最近的Rtriangle，然后从lpats中找到idx4
+                    idx4 = find_patch(kv4, pinfo, dispersion, dispgd)
                     self._k4tab[idx1, idx2, idx3] = idx4
         #初始化
 

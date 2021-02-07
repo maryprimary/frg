@@ -2,6 +2,7 @@
 
 import argparse
 from fermi.square import brillouin, dispersion, dispersion_gradient
+from fermi.square import hole_disp
 from fermi.surface import const_energy_line
 from fermi.patches import get_patches, find_patch
 from helpers.triangulated import square_split
@@ -13,10 +14,10 @@ from helpers.discretization import save_to as dis_save_to
 def precompute(args):
     '''计算patches'''
     disp = {
-        'square': dispersion
+        'square': dispersion, 'hole': hole_disp
     }[args.disp]
     dispgd = {
-        'square': dispersion_gradient
+        'square': dispersion_gradient, 'hole': dispersion_gradient
     }[args.disp]
     #正方格子的布里渊区
     brlu = brillouin()
@@ -32,7 +33,8 @@ def precompute(args):
     lsur = const_energy_line(ltris, ladjs, 0., disp)
     patches_visualize(pats, lsur, '{0}_surface_{1}.svg'.format(args.prefix, args.disp))
     #求出每个Rtriangle所在的patch
-    lpats = [find_patch(tri.center, pats, disp, dispgd) for tri in ltris]
+    #这种投影法把交点设置在Umklapp surface
+    lpats = [find_patch(tri.center, pats, dispersion, dispgd) for tri in ltris]
     dis_save_to('{0}_district_{1}.txt'.format(args.prefix, args.disp), lpats)
     district_visualize(ltris, lpats, '{0}_patches_{1}.svg'.format(args.prefix, args.disp))
 

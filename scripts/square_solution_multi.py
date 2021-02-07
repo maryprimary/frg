@@ -7,6 +7,7 @@ import argparse
 import numpy
 #格子的相关功能
 from fermi.square import dispersion, dispersion_gradient, shift_kv
+from fermi.square import hole_disp
 from fermi.surface import const_energy_line
 #加载布里渊区的配置
 from fermi.patches import get_patches
@@ -20,10 +21,10 @@ from flowequ import hubbard
 def load_brillouin(args):
     '''加载布里渊区的配置'''
     disp = {
-        'square': dispersion
+        'square': dispersion, 'hole': hole_disp
     }[args.disp]
     dispgd = {
-        'square': dispersion_gradient
+        'square': dispersion_gradient, 'hole': dispersion_gradient
     }[args.disp]
     brlu, nps, ltris, ladjs =\
         triload('{0}_triangle_{1}.txt'.format(args.prefix, args.disp))
@@ -37,17 +38,17 @@ def load_brillouin(args):
 def slove_equ(args, ltris, ladjs, pinfo, lpats):
     '''解方程'''
     disp = {
-        'square': dispersion
+        'square': dispersion, 'hole': hole_disp
     }[args.disp]
     dispgd = {
-        'square': dispersion_gradient
+        'square': dispersion_gradient, 'hole': dispersion_gradient
     }[args.disp]
     #初始化U
     hubbard.uinit(1.0, args.patches)
     #初始化hubbard模型
     hubbard.config_init(
         ltris, ladjs, pinfo, lpats,
-        disp, dispgd, shift_kv, 4.
+        disp, dispgd, shift_kv, 4.2
     )
     #输出文件夹
     if not os.path.isdir('heatmap2'):
@@ -55,7 +56,7 @@ def slove_equ(args, ltris, ladjs, pinfo, lpats):
     lval = 0.
     lstep = 0.01
     draw_heatmap(hubbard.U[:, :, 0], save='heatmap2/{:.2f}.jpg'.format(lval))
-    for _ in range(320):
+    for _ in range(1200):
         #duval = numpy.zeros_like(hubbard.U)
         #进程池
         pool = multiprocessing.Pool(4)
