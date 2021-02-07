@@ -46,7 +46,7 @@ def slove_equ(args, ltris, ladjs, pinfo, lpats):
     #初始化hubbard模型
     hubbard.config_init(
         ltris, ladjs, pinfo, lpats,
-        disp, dispgd, shift_kv, 4.
+        disp, dispgd, shift_kv, 4.2
     )
     #输出文件夹
     if not os.path.isdir('heatmap'):

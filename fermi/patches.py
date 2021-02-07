@@ -64,6 +64,9 @@ def find_patch(pnt: Point, patches, dispfun, dispgdfun):
         #如果已经穿过了费米面就停下
         if numpy.sign(__disp_by_dis(gsign * gues)) != intsign:
             break
+        #如果始终没有穿过费米面
+        if numpy.abs(gues) > numpy.pi*4:
+            raise ValueError(str(pnt) + str(cita) + ' 没有穿过Umklapp')
         gues += 0.01
     #这个时候gues已经反号，而gues-0.01还没有
     rootd = optimize.bisect(__disp_by_dis, (gues-0.01) * gsign, gues * gsign)
