@@ -28,7 +28,7 @@ def load_brillouin(args):
         triload('{0}_triangle_{1}.txt'.format(args.prefix, args.disp))
     if nps != args.mesh:
         raise ValueError('mesh数量对应不上')
-    pinfo = get_patches(brlu, 16, disp)
+    pinfo = get_patches(brlu, args.patches, disp)
     lpats = patload('{0}_district_{1}.txt'.format(args.prefix, args.disp))
     return ltris, ladjs, pinfo, lpats
 

@@ -5,7 +5,6 @@
 
 import numpy
 from basics import Point
-from fermi.square import dispersion
 from fermi.patches import find_patch
 from fermi.surface import const_energy_line_in_patches
 from fermi.bubble import pi_plus_ec, pi_minus_ec

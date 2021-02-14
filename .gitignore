@@ -9,6 +9,8 @@ scripts/*
 !scripts/square_solution_multi.py
 heatmap
 heatmap2
+heatmap3
+heatmap4
 
 #性能分析
 profile/*
@@ -18,3 +20,6 @@ profile/*
 
 #VSCode插件
 .VSCode*/
+
+#杂项
+comment/
