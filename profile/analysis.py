@@ -9,7 +9,7 @@ def main(fname):
     '''入口'''
     out = ''.join(fname.split('.')[:-1])+'.prof'
     stat = pstats.Stats(fname, stream=open(out, 'w'))
-    stat.sort_stats(1)
+    stat.sort_stats(2)
     stat.print_stats()
 
 

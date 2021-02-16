@@ -1,7 +1,7 @@
 """求解frg方程"""
 
 import os
-#import cProfile
+import cProfile
 import argparse
 import numpy
 #格子的相关功能
@@ -46,7 +46,7 @@ def slove_equ(args, ltris, ladjs, pinfo, lpats):
     #初始化hubbard模型
     hubbard.config_init(
         ltris, ladjs, pinfo, lpats,
-        disp, dispgd, shift_kv, 4.2
+        disp, dispgd, shift_kv, 1.
     )
     #输出文件夹
     if not os.path.isdir('heatmap'):
@@ -54,8 +54,14 @@ def slove_equ(args, ltris, ladjs, pinfo, lpats):
     lval = 0.
     lstep = 0.01
     draw_heatmap(hubbard.U[:, :, 0], save='heatmap/{:.2f}.jpg'.format(lval))
-    for _ in range(400):
+    for _ in range(10):
         duval = numpy.zeros_like(hubbard.U)
+        hubbard.precompute_contour(lval)
+        hubbard.precompute_qpp(lval)
+        hubbard.precompute_qfs(lval)
+        hubbard.precompute_nqfs(lval)
+        hubbard.precompute_qex(lval)
+        hubbard.precompute_nqex(lval)
         #计算每个idx的导数
         for idx1 in range(args.patches):
             for idx2 in range(args.patches):
@@ -89,5 +95,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
-    #cProfile.run('main()', 'profile/single.raw')
+    #main()
+    cProfile.run('main()', 'profile/bubble.raw')
