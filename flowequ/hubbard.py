@@ -3,9 +3,9 @@
 #pylint: disable=pointless-string-statement
 
 
+import multiprocessing
 import numpy
 from basics import Point
-from fermi.square import dispersion
 from fermi.patches import find_patch
 from fermi.surface import const_energy_line_in_patches
 from fermi.bubble import pi_plus_ec, pi_minus_ec
@@ -81,6 +81,11 @@ class _Config():
         #初始化
 
     @property
+    def patchnum(self):
+        '''patch数量'''
+        return self._patchnum
+
+    @property
     def ltris(self):
         '''小三角的列表'''
         return self._ltris
@@ -132,6 +137,248 @@ def config_init(ltris, ladjs, pinfo, lpats, disp, dispgd, ksft, lamb0):
     if CONFIG is not None:
         raise RuntimeError('已经初始化过了')
     CONFIG = _Config(ltris, ladjs, pinfo, lpats, disp, dispgd, ksft, lamb0)
+
+
+QUICKCONTOUR = None
+
+def precompute_contour(lval):
+    '''预先计算等能线，在后续的dl_ec的计算中（一共pnum^3次）
+    每次都需要计算这个等能线的话会很浪费时间'''
+    global QUICKCONTOUR, CONFIG
+    if QUICKCONTOUR is None:
+        QUICKCONTOUR = {}
+    keys = list(QUICKCONTOUR.keys())
+    for key in keys:
+        del QUICKCONTOUR[key]
+    lamb = CONFIG.lamb0 * numpy.exp(-lval)
+    ltris, ladjs, lpats = CONFIG.ltris, CONFIG.ladjs, CONFIG.lpats
+    disp, dispgd = CONFIG.disp, CONFIG.dispgd
+    posi, peidx = const_energy_line_in_patches(ltris, ladjs, lpats, lamb, disp)
+    nega, neidx = const_energy_line_in_patches(ltris, ladjs, lpats, -lamb, disp)
+    QUICKCONTOUR[lval] = (posi, peidx, nega, neidx)
+
+
+QUICKQPP = None
+
+def precompute_qpp(lval):
+    '''pp沟道的bubble和idx3是没有关系的，可以省略'''
+    global QUICKQPP, CONFIG, QUICKCONTOUR
+    if lval not in QUICKCONTOUR:
+        raise ValueError('precompute_qpp %.2f 没有提前计算contour' % lval)
+    if QUICKQPP is None:
+        QUICKQPP = {}
+    #删除掉除了现在的所有内容
+    keys = list(QUICKQPP.keys())
+    for key in keys:
+        del QUICKQPP[key]
+    #QUICKQPP[lval] = numpy.ndarray((CONFIG.patchnum, CONFIG.patchnum, CONFIG.patchnum))
+    #
+    pinfo = CONFIG.pinfo
+    ksft = CONFIG.ksft
+    disp, dispgd = CONFIG.disp, CONFIG.dispgd
+    lamb = CONFIG.lamb0 * numpy.exp(-lval)
+    #所有patch上面的等能线
+    posi, peidx, nega, neidx = QUICKCONTOUR[lval]
+    #切分好patch
+    lnposi = []
+    lnnega = []
+    for nidx in range(CONFIG.patchnum):
+        lnposi.append([pos for pos, eid in zip(posi, peidx) if eid == nidx])
+        lnnega.append([neg for neg, eid in zip(nega, neidx) if eid == nidx])
+    #pp沟道所有bubble的自由度
+    data_list = []
+    place_holder = numpy.ndarray((CONFIG.patchnum, CONFIG.patchnum, CONFIG.patchnum))
+    nditer = numpy.nditer(
+        place_holder,
+        flags=['multi_index'])
+    while not nditer.finished:
+        nidx, idx1, idx2 = nditer.multi_index
+        kv1, kv2 = pinfo[idx1], pinfo[idx2]
+        q_pp = ksft(kv1, kv2)
+        data_list.append((lnposi[nidx], lnnega[nidx], lamb, q_pp, disp, ksft))
+        nditer.iternext()
+    pool = multiprocessing.Pool(4)
+    result = pool.starmap(pi_minus_ec, data_list)
+    #pi_minus_ec(nposi, nnega, lamb, q_pp, disp, ksft)
+    QUICKQPP[lval] = numpy.reshape(result, place_holder.shape)
+
+
+QUICKQFS = None
+
+def precompute_qfs(lval):
+    '''fs沟道的bubble和idx1是没有关系的，对idx1进行循环的时候重复计算浪费时间'''
+    global QUICKQFS, CONFIG, QUICKCONTOUR
+    if lval not in QUICKCONTOUR:
+        raise ValueError('precompute_qfs %.2f 没有提前运算等能线' % lval)
+    if QUICKQFS is None:
+        QUICKQFS = {}
+    #清空内容
+    keys = list(QUICKQFS.keys())
+    for key in keys:
+        del QUICKQFS[key]
+    #numpy.ndarray((CONFIG.patchnum, CONFIG.patchnum, CONFIG.patchnum))
+    pinfo = CONFIG.pinfo
+    ksft = CONFIG.ksft
+    disp, dispgd = CONFIG.disp, CONFIG.dispgd
+    lamb = CONFIG.lamb0 * numpy.exp(-lval)
+    #所有patch上面的等能线
+    posi, peidx, nega, neidx = QUICKCONTOUR[lval]
+    #切分好patch
+    lnposi = []
+    lnnega = []
+    for nidx in range(CONFIG.patchnum):
+        lnposi.append([pos for pos, eid in zip(posi, peidx) if eid == nidx])
+        lnnega.append([neg for neg, eid in zip(nega, neidx) if eid == nidx])
+    #fs沟道所有bubble的自由度
+    data_list = []
+    place_holder = numpy.ndarray((CONFIG.patchnum, CONFIG.patchnum, CONFIG.patchnum))
+    nditer = numpy.nditer(
+        place_holder,
+        flags=['multi_index'])
+    while not nditer.finished:
+        nidx, idx2, idx3 = nditer.multi_index
+        kv2, kv3 = pinfo[idx2], pinfo[idx3]
+        q_fs = ksft(kv3, Point(-kv2.coord[0], -kv2.coord[1], 1))
+        data_list.append((lnposi[nidx], lnnega[nidx], lamb, q_fs, disp, ksft))
+        nditer.iternext()
+    pool = multiprocessing.Pool(4)
+    result = pool.starmap(pi_plus_ec, data_list)
+    #pi_plus_ec(nposi, nnega, lamb, q_fs, disp, ksft)
+    QUICKQFS[lval] = numpy.reshape(result, place_holder.shape)
+
+
+QUICKNQFS = None
+
+def precompute_nqfs(lval):
+    '''nfs沟道的bubble和idx1是没有关系的，对idx1进行循环的时候重复计算浪费时间'''
+    global QUICKNQFS, CONFIG, QUICKCONTOUR
+    if lval not in QUICKCONTOUR:
+        raise ValueError('precompute_nqfs %.2f 没有提前运算等能线' % lval)
+    if QUICKNQFS is None:
+        QUICKNQFS = {}
+    #清空内容
+    keys = list(QUICKNQFS.keys())
+    for key in keys:
+        del QUICKNQFS[key]
+    #numpy.ndarray((CONFIG.patchnum, CONFIG.patchnum, CONFIG.patchnum))
+    pinfo = CONFIG.pinfo
+    ksft = CONFIG.ksft
+    disp, dispgd = CONFIG.disp, CONFIG.dispgd
+    lamb = CONFIG.lamb0 * numpy.exp(-lval)
+    #所有patch上面的等能线
+    posi, peidx, nega, neidx = QUICKCONTOUR[lval]
+    #切分好patch
+    lnposi = []
+    lnnega = []
+    for nidx in range(CONFIG.patchnum):
+        lnposi.append([pos for pos, eid in zip(posi, peidx) if eid == nidx])
+        lnnega.append([neg for neg, eid in zip(nega, neidx) if eid == nidx])
+    #nfs沟道所有bubble的自由度
+    data_list = []
+    place_holder = numpy.ndarray((CONFIG.patchnum, CONFIG.patchnum, CONFIG.patchnum))
+    nditer = numpy.nditer(
+        place_holder,
+        flags=['multi_index'])
+    while not nditer.finished:
+        nidx, idx2, idx3 = nditer.multi_index
+        kv2, kv3 = pinfo[idx2], pinfo[idx3]
+        q_fs = ksft(kv3, Point(-kv2.coord[0], -kv2.coord[1], 1))
+        nq_fs = Point(-q_fs.coord[0], -q_fs.coord[1], 1)
+        data_list.append((lnposi[nidx], lnnega[nidx], lamb, nq_fs, disp, ksft))
+        nditer.iternext()
+    pool = multiprocessing.Pool(4)
+    result = pool.starmap(pi_plus_ec, data_list)
+    #pi_plus_ec(nposi, nnega, lamb, nq_fs, disp, ksft)
+    QUICKNQFS[lval] = numpy.reshape(result, place_holder.shape)
+
+
+QUICKQEX = None
+
+def precompute_qex(lval):
+    '''ex沟道的bubble和idx2是没有关系的，对idx2的循环计算浪费时间'''
+    global QUICKQEX, CONFIG, QUICKCONTOUR
+    if lval not in QUICKCONTOUR:
+        raise ValueError('precompute_qex %.2f 没有提前运算等能线' % lval)
+    if QUICKQEX is None:
+        QUICKQEX = {}
+    #清空内容
+    keys = list(QUICKQEX.keys())
+    for key in keys:
+        del QUICKQEX[key]
+    #numpy.ndarray((CONFIG.patchnum, CONFIG.patchnum, CONFIG.patchnum))
+    pinfo = CONFIG.pinfo
+    ksft = CONFIG.ksft
+    disp, dispgd = CONFIG.disp, CONFIG.dispgd
+    lamb = CONFIG.lamb0 * numpy.exp(-lval)
+    #所有patch上面的等能线
+    posi, peidx, nega, neidx = QUICKCONTOUR[lval]
+    #切分好patch
+    lnposi = []
+    lnnega = []
+    for nidx in range(CONFIG.patchnum):
+        lnposi.append([pos for pos, eid in zip(posi, peidx) if eid == nidx])
+        lnnega.append([neg for neg, eid in zip(nega, neidx) if eid == nidx])
+    #ex沟道所有bubble的自由度
+    data_list = []
+    place_holder = numpy.ndarray((CONFIG.patchnum, CONFIG.patchnum, CONFIG.patchnum))
+    nditer = numpy.nditer(
+        place_holder,
+        flags=['multi_index'])
+    while not nditer.finished:
+        nidx, idx1, idx3 = nditer.multi_index
+        kv1, kv3 = pinfo[idx1], pinfo[idx3]
+        q_ex = ksft(kv1, Point(-kv3.coord[0], -kv3.coord[1], 1))
+        data_list.append((lnposi[nidx], lnnega[nidx], lamb, q_ex, disp, ksft))
+        nditer.iternext()
+    pool = multiprocessing.Pool(4)
+    result = pool.starmap(pi_plus_ec, data_list)
+    #pi_plus_ec(nposi, nnega, lamb, q_ex, disp, ksft)
+    QUICKQEX[lval] = numpy.reshape(result, place_holder.shape)
+
+
+QUICKNQEX = None
+
+def precompute_nqex(lval):
+    '''nex沟道的bubble和idx2是没有关系的，对idx2的循环计算浪费时间'''
+    global QUICKNQEX, CONFIG, QUICKCONTOUR
+    if lval not in QUICKCONTOUR:
+        raise ValueError('precompute_qex %.2f 没有提前运算等能线' % lval)
+    if QUICKNQEX is None:
+        QUICKNQEX = {}
+    #清空内容
+    keys = list(QUICKNQEX.keys())
+    for key in keys:
+        del QUICKNQEX[key]
+    #numpy.ndarray((CONFIG.patchnum, CONFIG.patchnum, CONFIG.patchnum))
+    pinfo = CONFIG.pinfo
+    ksft = CONFIG.ksft
+    disp, dispgd = CONFIG.disp, CONFIG.dispgd
+    lamb = CONFIG.lamb0 * numpy.exp(-lval)
+    #所有patch上面的等能线
+    posi, peidx, nega, neidx = QUICKCONTOUR[lval]
+    #切分好patch
+    lnposi = []
+    lnnega = []
+    for nidx in range(CONFIG.patchnum):
+        lnposi.append([pos for pos, eid in zip(posi, peidx) if eid == nidx])
+        lnnega.append([neg for neg, eid in zip(nega, neidx) if eid == nidx])
+    #nex沟道所有bubble的自由度
+    data_list = []
+    place_holder = numpy.ndarray((CONFIG.patchnum, CONFIG.patchnum, CONFIG.patchnum))
+    nditer = numpy.nditer(
+        place_holder,
+        flags=['multi_index'])
+    while not nditer.finished:
+        nidx, idx1, idx3 = nditer.multi_index
+        kv1, kv3 = pinfo[idx1], pinfo[idx3]
+        q_ex = ksft(kv1, Point(-kv3.coord[0], -kv3.coord[1], 1))
+        nq_ex = Point(-q_ex.coord[0], -q_ex.coord[1], 1)
+        data_list.append((lnposi[nidx], lnnega[nidx], lamb, nq_ex, disp, ksft))
+        nditer.iternext()
+    pool = multiprocessing.Pool(4)
+    result = pool.starmap(pi_plus_ec, data_list)
+    #pi_plus_ec(nposi, nnega, lamb, q_ex, disp, ksft)
+    QUICKNQEX[lval] = numpy.reshape(result, place_holder.shape)
 
 
 def dl_ec(lval, idx1, idx2, idx3):
@@ -216,6 +463,10 @@ def dl_ec(lval, idx1, idx2, idx3):
     这样就有了完整的方程
     '''
     global CONFIG, U
+    global QUICKCONTOUR
+    global QUICKQPP
+    global QUICKQFS, QUICKNQFS
+    global QUICKQEX, QUICKNQEX
     pinfo = CONFIG.pinfo
     ksft = CONFIG.ksft
     disp, dispgd = CONFIG.disp, CONFIG.dispgd
@@ -224,31 +475,52 @@ def dl_ec(lval, idx1, idx2, idx3):
     #左边u的第四个idx
     idx4 = CONFIG.k4tab[idx1, idx2, idx3]
     #确定三个沟道的动量
-    q_pp = ksft(kv1, kv2)
-    q_fs = ksft(kv3, Point(-kv2.coord[0], -kv2.coord[1], 1))
-    nq_fs = Point(-q_fs.coord[0], -q_fs.coord[1], 1)
-    q_ex = ksft(kv1, Point(-kv3.coord[0], -kv3.coord[1], 1))
-    nq_ex = Point(-q_ex.coord[0], -q_ex.coord[1], 1)
+    #q_pp = ksft(kv1, kv2)
+    #q_fs = ksft(kv3, Point(-kv2.coord[0], -kv2.coord[1], 1))
+    #nq_fs = Point(-q_fs.coord[0], -q_fs.coord[1], 1)
+    #q_ex = ksft(kv1, Point(-kv3.coord[0], -kv3.coord[1], 1))
+    #nq_ex = Point(-q_ex.coord[0], -q_ex.coord[1], 1)
     #用来数值计算的量
     ltris, ladjs, lpats = CONFIG.ltris, CONFIG.ladjs, CONFIG.lpats
-    posi, peidx = const_energy_line_in_patches(ltris, ladjs, lpats, lamb, disp)
-    nega, neidx = const_energy_line_in_patches(ltris, ladjs, lpats, -lamb, disp)
+    if lval in QUICKCONTOUR:
+        posi, peidx, nega, neidx = QUICKCONTOUR[lval]
+    else:
+        print('%.2f没有提前计算等能线' % lval)
+        raise RuntimeError('%s' % __file__)
+        #posi, peidx = const_energy_line_in_patches(ltris, ladjs, lpats, lamb, disp)
+        #nega, neidx = const_energy_line_in_patches(ltris, ladjs, lpats, -lamb, disp)
     #
     value = 0.
     for nidx, _ in enumerate(pinfo, 0):
         #第n个patch上的PI函数需要用到属于n的两个等能线
-        nposi = [pos for pos, eid in zip(posi, peidx) if eid == nidx]
-        nnega = [neg for neg, eid in zip(nega, neidx) if eid == nidx]
-        pi_min_n_q_pp =\
-            pi_minus_ec(nposi, nnega, lamb, q_pp, disp, ksft)
-        pi_plu_n_q_fs =\
-            pi_plus_ec(nposi, nnega, lamb, q_fs, disp, ksft)
-        pi_plu_n_nq_fs =\
-            pi_plus_ec(nposi, nnega, lamb, nq_fs, disp, ksft)
-        pi_plu_n_q_ex =\
-            pi_plus_ec(nposi, nnega, lamb, q_ex, disp, ksft)
-        pi_plu_n_nq_ex =\
-            pi_plus_ec(nposi, nnega, lamb, nq_ex, disp, ksft)
+        #nposi = [pos for pos, eid in zip(posi, peidx) if eid == nidx]
+        #nnega = [neg for neg, eid in zip(nega, neidx) if eid == nidx]
+        if lval not in QUICKQPP:
+            raise RuntimeError('没有提前计算QPP %.2f' % lval)
+            #pi_min_n_q_pp =\
+            #    pi_minus_ec(nposi, nnega, lamb, q_pp, disp, ksft)
+        pi_min_n_q_pp = QUICKQPP[lval][nidx, idx1, idx2]
+        if lval not in QUICKQFS:
+            raise RuntimeError('没有提前计算QFS %.2f' % lval)
+            #pi_plu_n_q_fs =\
+            #    pi_plus_ec(nposi, nnega, lamb, q_fs, disp, ksft)
+        pi_plu_n_q_fs = QUICKQFS[lval][nidx, idx2, idx3]
+        if lval not in QUICKNQFS:
+            raise RuntimeError('没有提前计算NQFS %.2f' % lval)
+            #pi_plu_n_nq_fs =\
+            #    pi_plus_ec(nposi, nnega, lamb, nq_fs, disp, ksft)
+        pi_plu_n_nq_fs = QUICKNQFS[lval][nidx, idx2, idx3]
+        if lval not in QUICKQEX:
+            raise RuntimeError('没有提前计算QEX %.2f' % lval)
+            #pi_plu_n_q_ex =\
+            #    pi_plus_ec(nposi, nnega, lamb, q_ex, disp, ksft)
+        pi_plu_n_q_ex = QUICKQEX[lval][nidx, idx1, idx3]
+        if lval not in QUICKNQEX:
+            raise RuntimeError('没有提前计算NQEX %.2f' % lval)
+            #pi_plu_n_nq_ex =\
+            #    pi_plus_ec(nposi, nnega, lamb, nq_ex, disp, ksft)
+        pi_plu_n_nq_ex = QUICKNQEX[lval][nidx, idx1, idx3]
+        #方程
         value += pi_min_n_q_pp * (
             U[idx2, idx1, nidx] * U[idx3, idx4, nidx] + U[idx1, idx2, nidx] * U[idx4, idx3, nidx]
         )
