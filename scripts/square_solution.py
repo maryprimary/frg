@@ -6,7 +6,6 @@ import argparse
 import numpy
 #格子的相关功能
 from fermi.square import dispersion, dispersion_gradient, shift_kv
-from fermi.surface import const_energy_line
 #加载布里渊区的配置
 from fermi.patches import get_patches
 from helpers.triangulated import load_from as triload
