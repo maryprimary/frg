@@ -1,6 +1,6 @@
 """Hubbard模型用的流方程"""
 
-#pylint: disable=pointless-string-statement
+#pylint: disable=pointless-string-statement, global-statement
 
 
 import multiprocessing

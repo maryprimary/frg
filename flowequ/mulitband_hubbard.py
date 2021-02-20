@@ -1,6 +1,6 @@
 """多带Hubbard模型用的流方程"""
 
-#pylint: disable=pointless-string-statement
+#pylint: disable=pointless-string-statement, global-statement
 
 
 import multiprocessing
@@ -565,6 +565,6 @@ def dl_ec(lval, bd1, bd2, bd3, bd4, idx1, idx2, idx3):
     value = -value
     #太大的时候就线暂停
     if numpy.abs(value) > 1.e32:
-        print('%2.f大于1.e32' % lval)
+        #print('%.2f大于1.e32' % lval)
         value = 0
     return value

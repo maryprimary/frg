@@ -4,10 +4,14 @@ __pycache__
 #测试
 tests/*
 scripts/*
+!scripts/stripe
 !scripts/square_brillouin.py
 !scripts/square_solution.py
 !scripts/square_solution_multi.py
 heatmap*/
+scripts/stripe/*
+!scripts/stripe/brillouin.py
+!scripts/stripe/solution.py
 
 #性能分析
 profile/*
