@@ -4,17 +4,25 @@ __pycache__
 #测试
 tests/*
 scripts/*
+!scripts/stripe
 !scripts/square_brillouin.py
 !scripts/square_solution.py
 !scripts/square_solution_multi.py
-heatmap
-heatmap2
+heatmap*/
+scripts/stripe/*
+!scripts/stripe/brillouin.py
+!scripts/stripe/solution.py
 
 #性能分析
 profile/*
 !profile/analysis.py
 !profile/multi*
 !profile/single*
+!profile/bubble*
+!profile/contour*
 
 #VSCode插件
 .VSCode*/
+
+#杂项
+comment/

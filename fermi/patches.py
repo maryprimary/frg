@@ -45,6 +45,7 @@ def find_patch(pnt: Point, patches, dispfun, dispgdfun, step):
     olddisp = dispfun(kxv, kyv)
     while True:
         cita = dispgdfun(kxv, kyv)
+        #print(kxv, kyv, cita)
         #确定方向
         kxp = kxv + step * numpy.cos(cita)
         kyp = kyv + step * numpy.sin(cita)
@@ -62,11 +63,12 @@ def find_patch(pnt: Point, patches, dispfun, dispgdfun, step):
         if numpy.abs(kyn) > numpy.pi:
             kyn = numpy.sign(kyn) * numpy.pi
         newdispn = dispfun(kxn, kyn)
-        #反号
-        if newdispp * olddisp < 0:
+        #反号，有些时候会直接碰到0，这个时候，如果是old等于0了，那么gsign无关紧要，
+        #如果是新的等于零，那么朝它的方向也是对的
+        if newdispp * olddisp <= 0:
             gsign = +1
             break
-        if newdispn * olddisp < 0:
+        if newdispn * olddisp <= 0:
             gsign = -1
             break
         #看谁下降得快
@@ -75,6 +77,8 @@ def find_patch(pnt: Point, patches, dispfun, dispgdfun, step):
             kxv, kyv = kxp, kyp
         else:#如果n方向下降的快
             kxv, kyv = kxn, kyn
+        #print(newdispn, newdispp)
+        #raise
         if numpy.abs(kxv) > numpy.pi or numpy.abs(kyv) > numpy.pi:
             raise ValueError('出界了')
     #现在kxv，kyv向cita方向step长度的符号是不同的

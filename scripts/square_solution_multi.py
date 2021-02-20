@@ -8,7 +8,6 @@ import numpy
 #格子的相关功能
 from fermi.square import dispersion, dispersion_gradient, shift_kv
 from fermi.square import hole_disp
-from fermi.surface import const_energy_line
 #加载布里渊区的配置
 from fermi.patches import get_patches
 from helpers.triangulated import load_from as triload
@@ -30,7 +29,7 @@ def load_brillouin(args):
         triload('{0}_triangle_{1}.txt'.format(args.prefix, args.disp))
     if nps != args.mesh:
         raise ValueError('mesh数量对应不上')
-    pinfo = get_patches(brlu, 16, disp)
+    pinfo = get_patches(brlu, args.patches, disp)
     lpats = patload('{0}_district_{1}.txt'.format(args.prefix, args.disp))
     return ltris, ladjs, pinfo, lpats
 
@@ -48,17 +47,24 @@ def slove_equ(args, ltris, ladjs, pinfo, lpats):
     #初始化hubbard模型
     hubbard.config_init(
         ltris, ladjs, pinfo, lpats,
-        disp, dispgd, shift_kv, 4.2
+        disp, dispgd, shift_kv, 4.0
     )
     #输出文件夹
-    if not os.path.isdir('heatmap2'):
-        os.mkdir('heatmap2')
+    if not os.path.isdir('heatmap5'):
+        os.mkdir('heatmap5')
     lval = 0.
     lstep = 0.01
-    draw_heatmap(hubbard.U[:, :, 0], save='heatmap2/{:.2f}.jpg'.format(lval))
-    for _ in range(1200):
+    draw_heatmap(hubbard.U[:, :, 0], save='heatmap5/{:.2f}.jpg'.format(lval))
+    for _ in range(320):
         #duval = numpy.zeros_like(hubbard.U)
+        hubbard.precompute_contour(lval)
+        hubbard.precompute_qpp(lval)
+        hubbard.precompute_qfs(lval)
+        hubbard.precompute_nqfs(lval)
+        hubbard.precompute_qex(lval)
+        hubbard.precompute_nqex(lval)
         #进程池
+        #KNOWN ISSUE: 在修改全局变量之间建立的Pool，里面不会包含全局变量
         pool = multiprocessing.Pool(4)
         #计算每个idx的导数
         data_list = []
@@ -73,7 +79,7 @@ def slove_equ(args, ltris, ladjs, pinfo, lpats):
         #这两个过程不能放在一起，因为计算dl_ec的时候用到了hubbard.U
         hubbard.U += duval * lstep
         lval += lstep
-        draw_heatmap(hubbard.U[:, :, 0], save='heatmap2/{:.2f}.jpg'.format(lval))
+        draw_heatmap(hubbard.U[:, :, 0], save='heatmap5/{:.2f}.jpg'.format(lval))
 
 
 def main():
@@ -98,4 +104,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-    #cProfile.run('main()', 'profile/multi.raw')
+    #cProfile.run('main()', 'profile/contour.raw')
