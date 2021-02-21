@@ -69,23 +69,27 @@ def slove_equ(args, ltris, ladjs, mpinfo, mlpats):
     lval = 0.
     lstep = 0.01
     draw_heatmap(
-        hubbard.U[0, 0, 0, 0, :, :, 3],
+        hubbard.U[0, 0, 0, 0, :, :, 12],
         save='{0}/{1:.2f}ssss.jpg'.format(rpath, lval)
     )
     draw_heatmap(
-        hubbard.U[0, 0, 0, 1, :, :, 3],
+        hubbard.U[0, 0, 0, 1, :, :, 12],
         save='{0}/{1:.2f}sssp.jpg'.format(rpath, lval)
     )
     draw_heatmap(
-        hubbard.U[1, 1, 0, 0, :, :, 3],
+        hubbard.U[1, 1, 0, 0, :, :, 12],
         save='{0}/{1:.2f}ppss.jpg'.format(rpath, lval)
     )
     draw_heatmap(
-        hubbard.U[0, 1, 1, 1, :, :, 3],
-        save='{0}/{1:.2f}sppp.jpg'.format(rpath, lval)
+        hubbard.U[1, 0, 0, 1, :, :, 12],
+        save='{0}/{1:.2f}pssp.jpg'.format(rpath, lval)
     )
     draw_heatmap(
-        hubbard.U[1, 1, 1, 1, :, :, 3],
+        hubbard.U[0, 1, 0, 1, :, :, 12],
+        save='{0}/{1:.2f}spsp.jpg'.format(rpath, lval)
+    )
+    draw_heatmap(
+        hubbard.U[1, 1, 1, 1, :, :, 12],
         save='{0}/{1:.2f}pppp.jpg'.format(rpath, lval)
     )
     print(hubbard.U[0, 0, 0, 0, 0, 0, 0])
@@ -123,23 +127,27 @@ def slove_equ(args, ltris, ladjs, mpinfo, mlpats):
         del data_list, result, duval, pool
         #
         draw_heatmap(
-            hubbard.U[0, 0, 0, 0, :, :, 3],
+            hubbard.U[0, 0, 0, 0, :, :, 12],
             save='{0}/{1:.2f}ssss.jpg'.format(rpath, lval)
         )
         draw_heatmap(
-            hubbard.U[0, 0, 0, 1, :, :, 3],
+            hubbard.U[0, 0, 0, 1, :, :, 12],
             save='{0}/{1:.2f}sssp.jpg'.format(rpath, lval)
         )
         draw_heatmap(
-            hubbard.U[1, 1, 0, 0, :, :, 3],
+            hubbard.U[1, 1, 0, 0, :, :, 12],
             save='{0}/{1:.2f}ppss.jpg'.format(rpath, lval)
         )
         draw_heatmap(
-            hubbard.U[0, 1, 1, 1, :, :, 3],
-            save='{0}/{1:.2f}sppp.jpg'.format(rpath, lval)
+            hubbard.U[1, 0, 0, 1, :, :, 12],
+            save='{0}/{1:.2f}pssp.jpg'.format(rpath, lval)
         )
         draw_heatmap(
-            hubbard.U[1, 1, 1, 1, :, :, 3],
+            hubbard.U[0, 1, 0, 1, :, :, 12],
+            save='{0}/{1:.2f}spsp.jpg'.format(rpath, lval)
+        )
+        draw_heatmap(
+            hubbard.U[1, 1, 1, 1, :, :, 12],
             save='{0}/{1:.2f}pppp.jpg'.format(rpath, lval)
         )
         print(hubbard.U[0, 0, 0, 0, 0, 0, 0])
