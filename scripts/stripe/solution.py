@@ -68,30 +68,35 @@ def slove_equ(args, ltris, ladjs, mpinfo, mlpats):
     #
     lval = 0.
     lstep = 0.01
-    draw_heatmap(
-        hubbard.U[0, 0, 0, 0, :, :, 12],
-        save='{0}/{1:.2f}ssss.jpg'.format(rpath, lval)
-    )
-    draw_heatmap(
-        hubbard.U[0, 0, 0, 1, :, :, 12],
-        save='{0}/{1:.2f}sssp.jpg'.format(rpath, lval)
-    )
-    draw_heatmap(
-        hubbard.U[1, 1, 0, 0, :, :, 12],
-        save='{0}/{1:.2f}ppss.jpg'.format(rpath, lval)
-    )
-    draw_heatmap(
-        hubbard.U[1, 0, 0, 1, :, :, 12],
-        save='{0}/{1:.2f}pssp.jpg'.format(rpath, lval)
-    )
-    draw_heatmap(
-        hubbard.U[0, 1, 0, 1, :, :, 12],
-        save='{0}/{1:.2f}spsp.jpg'.format(rpath, lval)
-    )
-    draw_heatmap(
-        hubbard.U[1, 1, 1, 1, :, :, 12],
-        save='{0}/{1:.2f}pppp.jpg'.format(rpath, lval)
-    )
+    numpy.save('{0}/{1:.2f}U.npy'.format(rpath, lval), hubbard.U)
+    #draw_heatmap(
+    #    hubbard.U[0, 0, 0, 0, :, :, 12],
+    #    save='{0}/{1:.2f}ssss.jpg'.format(rpath, lval)
+    #)
+    #draw_heatmap(
+    #    hubbard.U[0, 0, 0, 1, :, :, 12],
+    #    save='{0}/{1:.2f}sssp.jpg'.format(rpath, lval)
+    #)
+    #draw_heatmap(
+    #    hubbard.U[1, 1, 1, 0, :, :, 12],
+    #    save='{0}/{1:.2f}ppps.jpg'.format(rpath, lval)
+    #)
+    #draw_heatmap(
+    #    hubbard.U[1, 1, 0, 0, :, :, 12],
+    #    save='{0}/{1:.2f}ppss.jpg'.format(rpath, lval)
+    #)
+    #draw_heatmap(
+    #    hubbard.U[1, 0, 0, 1, :, :, 12],
+    #    save='{0}/{1:.2f}pssp.jpg'.format(rpath, lval)
+    #)
+    #draw_heatmap(
+    #    hubbard.U[0, 1, 0, 1, :, :, 12],
+    #    save='{0}/{1:.2f}spsp.jpg'.format(rpath, lval)
+    #)
+    #draw_heatmap(
+    #    hubbard.U[1, 1, 1, 1, :, :, 12],
+    #    save='{0}/{1:.2f}pppp.jpg'.format(rpath, lval)
+    #)
     print(hubbard.U[0, 0, 0, 0, 0, 0, 0])
     print(hubbard.U[1, 1, 1, 1, 0, 0, 0])
     print(hubbard.U[1, 1, 1, 0, 1, 1, 1])
@@ -100,7 +105,7 @@ def slove_equ(args, ltris, ladjs, mpinfo, mlpats):
     print(hubbard.U[0, 0, 1, 1, 2, 2, 2])
     print(hubbard.U[1, 1, 1, 0, 3, 3, 3])
     print(hubbard.U[0, 1, 1, 1, 3, 3, 3])
-    for _ in range(500):
+    for _ in range(1000):
         hubbard.precompute_contour(lval)
         hubbard.precompute_qpp(lval)
         hubbard.precompute_qfs(lval)
@@ -126,30 +131,35 @@ def slove_equ(args, ltris, ladjs, mpinfo, mlpats):
         #
         del data_list, result, duval, pool
         #
-        draw_heatmap(
-            hubbard.U[0, 0, 0, 0, :, :, 12],
-            save='{0}/{1:.2f}ssss.jpg'.format(rpath, lval)
-        )
-        draw_heatmap(
-            hubbard.U[0, 0, 0, 1, :, :, 12],
-            save='{0}/{1:.2f}sssp.jpg'.format(rpath, lval)
-        )
-        draw_heatmap(
-            hubbard.U[1, 1, 0, 0, :, :, 12],
-            save='{0}/{1:.2f}ppss.jpg'.format(rpath, lval)
-        )
-        draw_heatmap(
-            hubbard.U[1, 0, 0, 1, :, :, 12],
-            save='{0}/{1:.2f}pssp.jpg'.format(rpath, lval)
-        )
-        draw_heatmap(
-            hubbard.U[0, 1, 0, 1, :, :, 12],
-            save='{0}/{1:.2f}spsp.jpg'.format(rpath, lval)
-        )
-        draw_heatmap(
-            hubbard.U[1, 1, 1, 1, :, :, 12],
-            save='{0}/{1:.2f}pppp.jpg'.format(rpath, lval)
-        )
+        #draw_heatmap(
+        #    hubbard.U[0, 0, 0, 0, :, :, 12],
+        #    save='{0}/{1:.2f}ssss.jpg'.format(rpath, lval)
+        #)
+        #draw_heatmap(
+        #    hubbard.U[0, 0, 0, 1, :, :, 12],
+        #    save='{0}/{1:.2f}sssp.jpg'.format(rpath, lval)
+        #)
+        #draw_heatmap(
+        #    hubbard.U[1, 1, 1, 0, :, :, 12],
+        #    save='{0}/{1:.2f}ppps.jpg'.format(rpath, lval)
+        #)
+        #draw_heatmap(
+        #    hubbard.U[1, 1, 0, 0, :, :, 12],
+        #    save='{0}/{1:.2f}ppss.jpg'.format(rpath, lval)
+        #)
+        #draw_heatmap(
+        #    hubbard.U[1, 0, 0, 1, :, :, 12],
+        #    save='{0}/{1:.2f}pssp.jpg'.format(rpath, lval)
+        #)
+        #draw_heatmap(
+        #    hubbard.U[0, 1, 0, 1, :, :, 12],
+        #    save='{0}/{1:.2f}spsp.jpg'.format(rpath, lval)
+        #)
+        #draw_heatmap(
+        #    hubbard.U[1, 1, 1, 1, :, :, 12],
+        #    save='{0}/{1:.2f}pppp.jpg'.format(rpath, lval)
+        #)
+        numpy.save('{0}/{1:.2f}U.npy'.format(rpath, lval), hubbard.U)
         print(hubbard.U[0, 0, 0, 0, 0, 0, 0])
         print(hubbard.U[1, 1, 1, 1, 0, 0, 0])
         print(hubbard.U[1, 1, 1, 0, 1, 1, 1])
@@ -163,8 +173,8 @@ def slove_equ(args, ltris, ladjs, mpinfo, mlpats):
 def main():
     '''入口'''
     parser = argparse.ArgumentParser(
-        prog='python3 square_brillouin.py',
-        description='precompute patches'
+        prog='python3 solution.py',
+        description='compute equation'
     )
     parser.add_argument('-p', '--patches', type=int, required=True, help='patches number')
     parser.add_argument('-s', '--stripe', type=float, default='square', help='stripe strength')
