@@ -12,6 +12,8 @@ heatmap*/
 scripts/stripe/*
 !scripts/stripe/brillouin.py
 !scripts/stripe/solution.py
+!scripts/stripe/visualize.py
+
 
 #性能分析
 profile/*
