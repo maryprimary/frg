@@ -6,11 +6,12 @@ from basics import Point
 from basics.point import middle_point
 #pylint: disable=pointless-string-statement
 
-def pi_plus_ec(posi, nega, lamb, qval, disp, ksft):
+def pi_plus_ec(posi, nega, lamb, qval, disp, ksft, area):
     '''使用能量cutoff作为flow parameter的bubble\n
     posi是能量为+LAMBDA的边，nega是能量为-LAMBDA的边, lamb是LAMBDA\n
     disp是色散关系，qval是需要平移的大小，应该用一个Point来包装，\n
     kshf是动量相加的函数, 这个函数应该能处理好到第一布里渊区的映射\n
+    area是第一布里渊区的面积\n
     ```(10.112)本身已经处理好了动量守恒，k, k-q是需要满足动量守恒的关系的，而处理好```
     ```k-q到第一布里渊区的映射就处理好了Umklapp```
     '''
@@ -63,15 +64,16 @@ def pi_plus_ec(posi, nega, lamb, qval, disp, ksft):
             continue
         intnega += edg.length / (lamb + disp_kprim)
     #乘上系数
-    result = lamb * (intposi + intnega) / numpy.square(numpy.pi*2)
+    result = lamb * (intposi + intnega) / area#numpy.square(numpy.pi*2)
     return result
 
 
-def pi_minus_ec(posi, nega, lamb, qval, disp, ksft):
+def pi_minus_ec(posi, nega, lamb, qval, disp, ksft, area):
     '''使用能量cutoff作为flow parameter的bubble\n
     posi是能量为+LAMBDA的边，nega是能量为-LAMBDA的边, lamb是LAMBDA\n
     disp是色散关系，qval是需要平移的大小，应该用一个Point来包装，\n
     kshf是动量相加的函数, 这个函数应该能处理好到第一布里渊区的映射\n
+    area是第一布里渊区的面积\n
     ```(10.112)本身已经处理好了动量守恒，k, k-q是需要满足动量守恒的关系的，而处理好```
     ```k-q到第一布里渊区的映射就处理好了Umklapp```
     '''
@@ -115,5 +117,5 @@ def pi_minus_ec(posi, nega, lamb, qval, disp, ksft):
             continue
         intnega += edg.length / (lamb - disp_kprim)
     #乘上系数
-    result = lamb * (intposi + intnega) / numpy.square(numpy.pi*2)
+    result = lamb * (intposi + intnega) / area#numpy.square(numpy.pi*2)
     return result

@@ -62,9 +62,9 @@ class _Config():
     ksft是动量相加的函数\n
     lamb0是初始值\n
     """
-    def __init__(self, ltris, ladjs, mpinfo, mlpats, \
+    def __init__(self, brlu, ltris, ladjs, mpinfo, mlpats, \
         mdisp, mdispgd, ksft, lamb0):
-        global U
+        self._brlu = brlu
         self._ltris = ltris
         self._nps = numpy.sqrt(len(ltris)) / 2
         self._bandnum = len(mpinfo)
@@ -106,6 +106,11 @@ class _Config():
         #                idx4 = find_patch(kv4, pinfo, disp, dispgd, numpy.pi / 2 / self._nps)
         #                self._k4tab[idx1, idx2, idx3] = idx4
         #初始化
+
+    @property
+    def brlu(self):
+        '''布里渊区'''
+        return self._brlu
 
     @property
     def ltris(self):
@@ -162,12 +167,12 @@ class _Config():
         '''从n1,n2,n3确定n4'''
         return self._mk4tab
 
-def config_init(ltris, ladjs, mpinfo, mlpats, mdisp, mdispgd, ksft, lamb0):
+def config_init(brlu, ltris, ladjs, mpinfo, mlpats, mdisp, mdispgd, ksft, lamb0):
     '''初始化配置'''
     global CONFIG
     if CONFIG is not None:
         raise RuntimeError('已经初始化过了')
-    CONFIG = _Config(ltris, ladjs, mpinfo, mlpats, mdisp, mdispgd, ksft, lamb0)
+    CONFIG = _Config(brlu, ltris, ladjs, mpinfo, mlpats, mdisp, mdispgd, ksft, lamb0)
 
 
 QUICKCONTOUR = None
@@ -241,6 +246,7 @@ def precompute_qpp(lval):
     mdisp = CONFIG.mdisp
     ksft = CONFIG.ksft
     lamb = CONFIG.lamb0 * numpy.exp(-lval)
+    area = CONFIG.brlu.width * CONFIG.brlu.height
     #所有带的等能线
     lmnposi, lmnnega = QUICKCONTOUR_PATCH[lval]
     #pp沟道所有自由度
@@ -262,7 +268,7 @@ def precompute_qpp(lval):
         #
         data_list.append(
             (lmnposi[alpha, nidx], lmnnega[alpha, nidx],\
-                lamb, q_pp, mdisp[beta], ksft)
+                lamb, q_pp, mdisp[beta], ksft, area)
         )
         nditer.iternext()
     #pi_ab_minus_ec(anposi, annega, lamb, q_pp, mdisp[beta], ksft)
@@ -289,6 +295,7 @@ def precompute_qfs(lval):
     mdisp = CONFIG.mdisp
     ksft = CONFIG.ksft
     lamb = CONFIG.lamb0 * numpy.exp(-lval)
+    area = CONFIG.brlu.width * CONFIG.brlu.height
     #所有带的等能线
     lmnposi, lmnnega = QUICKCONTOUR_PATCH[lval]
     #fs的所有自由度
@@ -309,7 +316,7 @@ def precompute_qfs(lval):
         q_fs = ksft(kv3, Point(-kv2.coord[0], -kv2.coord[1], 1))
         data_list.append(
             (lmnposi[alpha, nidx], lmnnega[alpha, nidx],\
-                lamb, q_fs, mdisp[beta], ksft)
+                lamb, q_fs, mdisp[beta], ksft, area)
         )
         nditer.iternext()
     #pi_ab_plus_ec(anposi, annega, lamb, q_fs, mdisp[beta], ksft)
@@ -336,6 +343,7 @@ def precompute_nqfs(lval):
     mdisp = CONFIG.mdisp
     ksft = CONFIG.ksft
     lamb = CONFIG.lamb0 * numpy.exp(-lval)
+    area = CONFIG.brlu.width * CONFIG.brlu.height
     #所有带的等能线
     lmnposi, lmnnega = QUICKCONTOUR_PATCH[lval]
     #nfs的所有自由度
@@ -357,7 +365,7 @@ def precompute_nqfs(lval):
         nq_fs = Point(-q_fs.coord[0], -q_fs.coord[1], 1)
         data_list.append(
             (lmnposi[alpha, nidx], lmnnega[alpha, nidx],\
-                lamb, nq_fs, mdisp[beta], ksft)
+                lamb, nq_fs, mdisp[beta], ksft, area)
         )
         nditer.iternext()
     #pi_ab_plus_ec(anposi, annega, lamb, nq_fs, mdisp[beta], ksft)
@@ -384,6 +392,7 @@ def precompute_qex(lval):
     mdisp = CONFIG.mdisp
     ksft = CONFIG.ksft
     lamb = CONFIG.lamb0 * numpy.exp(-lval)
+    area = CONFIG.brlu.width * CONFIG.brlu.height
     #所有带的等能线
     lmnposi, lmnnega = QUICKCONTOUR_PATCH[lval]
     #ex的所有自由度
@@ -404,7 +413,7 @@ def precompute_qex(lval):
         q_ex = ksft(kv1, Point(-kv3.coord[0], -kv3.coord[1], 1))
         data_list.append(
             (lmnposi[alpha, nidx], lmnnega[alpha, nidx],\
-                lamb, q_ex, mdisp[beta], ksft)
+                lamb, q_ex, mdisp[beta], ksft, area)
         )
         nditer.iternext()
     #pi_ab_plus_ec(anposi, annega, lamb, q_ex, mdisp[beta], ksft)
@@ -431,6 +440,7 @@ def precompute_nqex(lval):
     mdisp = CONFIG.mdisp
     ksft = CONFIG.ksft
     lamb = CONFIG.lamb0 * numpy.exp(-lval)
+    area = CONFIG.brlu.width * CONFIG.brlu.height
     #所有带的等能线
     lmnposi, lmnnega = QUICKCONTOUR_PATCH[lval]
     #nex的所有自由度
@@ -452,7 +462,7 @@ def precompute_nqex(lval):
         nq_ex = Point(-q_ex.coord[0], -q_ex.coord[1], 1)
         data_list.append(
             (lmnposi[alpha, nidx], lmnnega[alpha, nidx],\
-                lamb, nq_ex, mdisp[beta], ksft)
+                lamb, nq_ex, mdisp[beta], ksft, area)
         )
         nditer.iternext()
     #pi_ab_plus_ec(anposi, annega, lamb, nq_ex, mdisp[beta], ksft)

@@ -45,8 +45,9 @@ class _Config():
     """不会变的参数\n
     这里面l开头的三个都是和剖分的小三角有关的
     """
-    def __init__(self, ltris, ladjs, pinfo, lpats, disp, dispgd,\
+    def __init__(self, brlu, ltris, ladjs, pinfo, lpats, disp, dispgd,\
         ksft, lamb0):
+        self._brlu = brlu
         self._ltris = ltris
         self._nps = numpy.sqrt(len(ltris)) / 2
         self._ladjs = ladjs
@@ -84,6 +85,11 @@ class _Config():
     def patchnum(self):
         '''patch数量'''
         return self._patchnum
+
+    @property
+    def brlu(self):
+        '''第一布里渊区'''
+        return self._brlu
 
     @property
     def ltris(self):
@@ -131,12 +137,12 @@ class _Config():
         return self._k4tab
 
 
-def config_init(ltris, ladjs, pinfo, lpats, disp, dispgd, ksft, lamb0):
+def config_init(brlu, ltris, ladjs, pinfo, lpats, disp, dispgd, ksft, lamb0):
     '''初始化配置'''
     global CONFIG
     if CONFIG is not None:
         raise RuntimeError('已经初始化过了')
-    CONFIG = _Config(ltris, ladjs, pinfo, lpats, disp, dispgd, ksft, lamb0)
+    CONFIG = _Config(brlu, ltris, ladjs, pinfo, lpats, disp, dispgd, ksft, lamb0)
 
 
 QUICKCONTOUR = None
@@ -162,7 +168,7 @@ QUICKQPP = None
 
 def precompute_qpp(lval):
     '''pp沟道的bubble和idx3是没有关系的，可以省略'''
-    global QUICKQPP, CONFIG, QUICKCONTOUR
+    global QUICKQPP
     if lval not in QUICKCONTOUR:
         raise ValueError('precompute_qpp %.2f 没有提前计算contour' % lval)
     if QUICKQPP is None:
@@ -177,6 +183,7 @@ def precompute_qpp(lval):
     ksft = CONFIG.ksft
     disp, dispgd = CONFIG.disp, CONFIG.dispgd
     lamb = CONFIG.lamb0 * numpy.exp(-lval)
+    area = CONFIG.brlu.width * CONFIG.brlu.height
     #所有patch上面的等能线
     posi, peidx, nega, neidx = QUICKCONTOUR[lval]
     #切分好patch
@@ -195,7 +202,7 @@ def precompute_qpp(lval):
         nidx, idx1, idx2 = nditer.multi_index
         kv1, kv2 = pinfo[idx1], pinfo[idx2]
         q_pp = ksft(kv1, kv2)
-        data_list.append((lnposi[nidx], lnnega[nidx], lamb, q_pp, disp, ksft))
+        data_list.append((lnposi[nidx], lnnega[nidx], lamb, q_pp, disp, ksft, area))
         nditer.iternext()
     pool = multiprocessing.Pool(4)
     result = pool.starmap(pi_minus_ec, data_list)
@@ -207,7 +214,7 @@ QUICKQFS = None
 
 def precompute_qfs(lval):
     '''fs沟道的bubble和idx1是没有关系的，对idx1进行循环的时候重复计算浪费时间'''
-    global QUICKQFS, CONFIG, QUICKCONTOUR
+    global QUICKQFS
     if lval not in QUICKCONTOUR:
         raise ValueError('precompute_qfs %.2f 没有提前运算等能线' % lval)
     if QUICKQFS is None:
@@ -221,6 +228,7 @@ def precompute_qfs(lval):
     ksft = CONFIG.ksft
     disp, dispgd = CONFIG.disp, CONFIG.dispgd
     lamb = CONFIG.lamb0 * numpy.exp(-lval)
+    area = CONFIG.brlu.width * CONFIG.brlu.height
     #所有patch上面的等能线
     posi, peidx, nega, neidx = QUICKCONTOUR[lval]
     #切分好patch
@@ -239,7 +247,7 @@ def precompute_qfs(lval):
         nidx, idx2, idx3 = nditer.multi_index
         kv2, kv3 = pinfo[idx2], pinfo[idx3]
         q_fs = ksft(kv3, Point(-kv2.coord[0], -kv2.coord[1], 1))
-        data_list.append((lnposi[nidx], lnnega[nidx], lamb, q_fs, disp, ksft))
+        data_list.append((lnposi[nidx], lnnega[nidx], lamb, q_fs, disp, ksft, area))
         nditer.iternext()
     pool = multiprocessing.Pool(4)
     result = pool.starmap(pi_plus_ec, data_list)
@@ -251,7 +259,7 @@ QUICKNQFS = None
 
 def precompute_nqfs(lval):
     '''nfs沟道的bubble和idx1是没有关系的，对idx1进行循环的时候重复计算浪费时间'''
-    global QUICKNQFS, CONFIG, QUICKCONTOUR
+    global QUICKNQFS
     if lval not in QUICKCONTOUR:
         raise ValueError('precompute_nqfs %.2f 没有提前运算等能线' % lval)
     if QUICKNQFS is None:
@@ -265,6 +273,7 @@ def precompute_nqfs(lval):
     ksft = CONFIG.ksft
     disp, dispgd = CONFIG.disp, CONFIG.dispgd
     lamb = CONFIG.lamb0 * numpy.exp(-lval)
+    area = CONFIG.brlu.width * CONFIG.brlu.height
     #所有patch上面的等能线
     posi, peidx, nega, neidx = QUICKCONTOUR[lval]
     #切分好patch
@@ -284,7 +293,7 @@ def precompute_nqfs(lval):
         kv2, kv3 = pinfo[idx2], pinfo[idx3]
         q_fs = ksft(kv3, Point(-kv2.coord[0], -kv2.coord[1], 1))
         nq_fs = Point(-q_fs.coord[0], -q_fs.coord[1], 1)
-        data_list.append((lnposi[nidx], lnnega[nidx], lamb, nq_fs, disp, ksft))
+        data_list.append((lnposi[nidx], lnnega[nidx], lamb, nq_fs, disp, ksft, area))
         nditer.iternext()
     pool = multiprocessing.Pool(4)
     result = pool.starmap(pi_plus_ec, data_list)
@@ -296,7 +305,7 @@ QUICKQEX = None
 
 def precompute_qex(lval):
     '''ex沟道的bubble和idx2是没有关系的，对idx2的循环计算浪费时间'''
-    global QUICKQEX, CONFIG, QUICKCONTOUR
+    global QUICKQEX
     if lval not in QUICKCONTOUR:
         raise ValueError('precompute_qex %.2f 没有提前运算等能线' % lval)
     if QUICKQEX is None:
@@ -310,6 +319,7 @@ def precompute_qex(lval):
     ksft = CONFIG.ksft
     disp, dispgd = CONFIG.disp, CONFIG.dispgd
     lamb = CONFIG.lamb0 * numpy.exp(-lval)
+    area = CONFIG.brlu.width * CONFIG.brlu.height
     #所有patch上面的等能线
     posi, peidx, nega, neidx = QUICKCONTOUR[lval]
     #切分好patch
@@ -328,7 +338,7 @@ def precompute_qex(lval):
         nidx, idx1, idx3 = nditer.multi_index
         kv1, kv3 = pinfo[idx1], pinfo[idx3]
         q_ex = ksft(kv1, Point(-kv3.coord[0], -kv3.coord[1], 1))
-        data_list.append((lnposi[nidx], lnnega[nidx], lamb, q_ex, disp, ksft))
+        data_list.append((lnposi[nidx], lnnega[nidx], lamb, q_ex, disp, ksft, area))
         nditer.iternext()
     pool = multiprocessing.Pool(4)
     result = pool.starmap(pi_plus_ec, data_list)
@@ -354,6 +364,7 @@ def precompute_nqex(lval):
     ksft = CONFIG.ksft
     disp, dispgd = CONFIG.disp, CONFIG.dispgd
     lamb = CONFIG.lamb0 * numpy.exp(-lval)
+    area = CONFIG.brlu.width * CONFIG.brlu.height
     #所有patch上面的等能线
     posi, peidx, nega, neidx = QUICKCONTOUR[lval]
     #切分好patch
@@ -373,7 +384,7 @@ def precompute_nqex(lval):
         kv1, kv3 = pinfo[idx1], pinfo[idx3]
         q_ex = ksft(kv1, Point(-kv3.coord[0], -kv3.coord[1], 1))
         nq_ex = Point(-q_ex.coord[0], -q_ex.coord[1], 1)
-        data_list.append((lnposi[nidx], lnnega[nidx], lamb, nq_ex, disp, ksft))
+        data_list.append((lnposi[nidx], lnnega[nidx], lamb, nq_ex, disp, ksft, area))
         nditer.iternext()
     pool = multiprocessing.Pool(4)
     result = pool.starmap(pi_plus_ec, data_list)
