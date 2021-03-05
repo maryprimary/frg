@@ -35,10 +35,14 @@ def get_patches(brlu: Square, npatch, dispfun):
     return patches
 
 
-def find_patch(pnt: Point, patches, dispfun, dispgdfun, step):
+def find_patch(
+        pnt: Point, patches, dispfun, dispgdfun, step,
+        brlim=(numpy.pi, numpy.pi)
+    ):
     '''找到这个点是属于哪个patch的\n
     dispfun是色散关系的函数，dispgdfun是向费米面投影的梯度\n
-    注意这个step最好小于pi / 2 * mesh
+    注意这个step最好小于pi / 2 * mesh\n
+    brlim是布里渊区的边界，这里是最大的绝对值\n
     '''
     #从这个点引出一条线，如果两端反号，则停止
     kxv, kyv = pnt.coord
@@ -50,18 +54,18 @@ def find_patch(pnt: Point, patches, dispfun, dispgdfun, step):
         kxp = kxv + step * numpy.cos(cita)
         kyp = kyv + step * numpy.sin(cita)
         #大于pi就贴边
-        if numpy.abs(kxp) > numpy.pi:
-            kxp = numpy.sign(kxp) * numpy.pi
-        if numpy.abs(kyp) > numpy.pi:
-            kyp = numpy.sign(kyp) * numpy.pi
+        if numpy.abs(kxp) > brlim[0]:
+            kxp = numpy.sign(kxp) * brlim[0]
+        if numpy.abs(kyp) > brlim[1]:
+            kyp = numpy.sign(kyp) * brlim[1]
         newdispp = dispfun(kxp, kyp)
         #另一个方向
         kxn = kxv - step * numpy.cos(cita)
         kyn = kyv - step * numpy.sin(cita)
-        if numpy.abs(kxn) > numpy.pi:
-            kxn = numpy.sign(kxn) * numpy.pi
-        if numpy.abs(kyn) > numpy.pi:
-            kyn = numpy.sign(kyn) * numpy.pi
+        if numpy.abs(kxn) > brlim[0]:
+            kxn = numpy.sign(kxn) * brlim[0]
+        if numpy.abs(kyn) > brlim[1]:
+            kyn = numpy.sign(kyn) * brlim[1]
         newdispn = dispfun(kxn, kyn)
         #反号，有些时候会直接碰到0，这个时候，如果是old等于0了，那么gsign无关紧要，
         #如果是新的等于零，那么朝它的方向也是对的
@@ -79,17 +83,17 @@ def find_patch(pnt: Point, patches, dispfun, dispgdfun, step):
             kxv, kyv = kxn, kyn
         #print(newdispn, newdispp)
         #raise
-        if numpy.abs(kxv) > numpy.pi or numpy.abs(kyv) > numpy.pi:
+        if numpy.abs(kxv) > brlim[0] or numpy.abs(kyv) > brlim[1]:
             raise ValueError('出界了')
     #现在kxv，kyv向cita方向step长度的符号是不同的
     def __disp_by_dis(dis):
         '''从pnt这个点沿着slope走dis这么长的位置上的能量'''
         xdis = kxv + dis * numpy.cos(cita)
         ydis = kyv + dis * numpy.sin(cita)
-        if numpy.abs(xdis) > numpy.pi:
-            xdis = numpy.sign(xdis) * numpy.pi
-        if numpy.abs(ydis) > numpy.pi:
-            ydis = numpy.sign(ydis) * numpy.pi
+        if numpy.abs(xdis) > brlim[0]:
+            xdis = numpy.sign(xdis) * brlim[0]
+        if numpy.abs(ydis) > brlim[1]:
+            ydis = numpy.sign(ydis) * brlim[1]
         return dispfun(xdis, ydis)
     rootd = optimize.bisect(__disp_by_dis, 0, gsign * step)
     crsx = kxv + rootd * numpy.cos(cita)
