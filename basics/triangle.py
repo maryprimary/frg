@@ -15,6 +15,15 @@ class Triangle():
             Segment(self._pts[1], self._pts[2]),
             Segment(self._pts[2], self._pts[0]),
         ]
+        self._center = (
+            self._pts[0].coord[0] + self._pts[1].coord[0] +\
+                self._pts[2].coord[0],
+            self._pts[0].coord[1] + self._pts[1].coord[1] +\
+                self._pts[2].coord[1]
+        )
+        self._center = Point(
+            self._center[0] / 3., self._center[1] / 3., 1
+        )
 
     def __str__(self):
         return '{%s:\n\t' % self.__class__.__name__+\
@@ -37,6 +46,11 @@ class Triangle():
     def edges(self):
         '''边'''
         return self._edges
+
+    @property
+    def center(self):
+        '''中心点'''
+        return self._center
 
 
 class Rtriangle(Triangle):

@@ -38,7 +38,7 @@ def square_split(squ: Square, nps):
     ltris = numpy.ndarray((nps, nps, 4), dtype=Rtriangle)
     for idx1 in range(nps):
         for idx2 in range(nps):
-            ltris[idx1, idx2] = single_square_split(lsqus[idx1, idx2])
+            ltris[idx1, idx2, :] = single_square_split(lsqus[idx1, idx2])
     #找到每个小三角形挨着的小三角形
     #这个时候的顺序应该是和小三角形的边的顺序一致的
     ladjs = numpy.ndarray((nps, nps, 4), dtype=numpy.object)

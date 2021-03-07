@@ -31,10 +31,10 @@ def load_brillouin(args):
         raise ValueError('mesh数量对应不上')
     pinfo = get_patches(brlu, args.patches, disp)
     lpats = patload('{0}_district_{1}.txt'.format(args.prefix, args.disp))
-    return ltris, ladjs, pinfo, lpats
+    return brlu, ltris, ladjs, pinfo, lpats
 
 
-def slove_equ(args, ltris, ladjs, pinfo, lpats):
+def slove_equ(args, brlu, ltris, ladjs, pinfo, lpats):
     '''解方程'''
     disp = {
         'square': dispersion, 'hole': hole_disp
@@ -46,7 +46,7 @@ def slove_equ(args, ltris, ladjs, pinfo, lpats):
     hubbard.uinit(1.0, args.patches)
     #初始化hubbard模型
     hubbard.config_init(
-        ltris, ladjs, pinfo, lpats,
+        brlu, ltris, ladjs, pinfo, lpats,
         disp, dispgd, shift_kv, 4.0
     )
     #输出文件夹
@@ -97,8 +97,8 @@ def main():
     print('patch数量', args.patches)
     print('布里渊区网格数量', args.mesh)
     print('读取自 ', args.prefix)
-    ltris, ladjs, pinfo, lpats = load_brillouin(args)
-    slove_equ(args, ltris, ladjs, pinfo, lpats)
+    brlu, ltris, ladjs, pinfo, lpats = load_brillouin(args)
+    slove_equ(args, brlu, ltris, ladjs, pinfo, lpats)
 
 
 
