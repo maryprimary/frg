@@ -82,13 +82,13 @@ class _Config():
         pool = multiprocessing.Pool(4)
         data_list = []
         idxit = numpy.nditer(U, flags=['multi_index'])
+        step = numpy.minimum(brlu.width, brlu.height) / 10 / self._nps
         while not idxit.finished:
             bd1, bd2, bd3, bd4, idx1, idx2, idx3 = idxit.multi_index
             kv1, kv2, kv3 = mpinfo[bd1, idx1], mpinfo[bd2, idx2], mpinfo[bd3, idx3]
             kv4 = ksft(ksft(kv1, kv2), Point(-kv3.coord[0], -kv3.coord[1], 1))
             data_list.append(
-                (kv4, mpinfo[bd4, :], mdisp[bd4], mdispgd[bd4],\
-                    numpy.pi / 2 / self._nps)
+                (kv4, mpinfo[bd4, :], mdisp[bd4], mdispgd[bd4], step)
             )
             #idx4 = find_patch(kv4, mpinfo[bd4, :], mdisp[bd4],\
             #    mdispgd[bd4], numpy.pi / 2 / self._nps)

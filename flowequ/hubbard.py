@@ -63,6 +63,7 @@ class _Config():
             (self._patchnum, self._patchnum, self._patchnum),
             dtype=numpy.int
         )
+        step = numpy.minimum(brlu.width, brlu.height) / 10 / self._nps
         for idx1 in range(self._patchnum):
             for idx2 in range(self._patchnum):
                 for idx3 in range(self._patchnum):
@@ -76,7 +77,7 @@ class _Config():
                     #    for tri in self._ltris]
                     #idx4_ = numpy.argmin(dislist)
                     #idx4_ = self._lpats[idx4_]
-                    idx4 = find_patch(kv4, pinfo, disp, dispgd, numpy.pi / 2 / self._nps)
+                    idx4 = find_patch(kv4, pinfo, disp, dispgd, step)
                     #assert idx4_ == idx4
                     self._k4tab[idx1, idx2, idx3] = idx4
         #初始化
