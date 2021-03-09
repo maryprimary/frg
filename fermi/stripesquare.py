@@ -395,16 +395,134 @@ def basis_uval(banduval, st1, st2, st3, st4, kv1, kv2, kv3, kv4, patchdic):
         #    print(kv1, kv2, kv3, kv4)
         #    print(p_b1_k1, p_b2_k2, p_b3_k3)
         #    print(bv, banduval[ib1, ib2, ib3, ib4, p_b1_k1, p_b2_k2, p_b3_k3])
-        #    kv1 = Point(-2.8574, -1.4287, 1)
-        #    kv2 = Point(-2.8574, -1.4287, 1)
-        #    kv3 = Point(-2.3549, -1.9642, 1)
-        #    kv4 = shift_kv(shift_kv(kv1, kv2), Point(-kv3.coord[0], -kv3.coord[1], 1))
         #    print(kv1, kv2, kv3, kv4)
         #    bv2 = band_uval(2., ib1, ib2, ib3, ib4, kv1, kv2, kv3, kv4)
         #    print(bv2)
         #    raise
         result += Rs_b1_st1[ib1] * Rs_b2_st2[ib2] * R_b3_st3[ib3] * R_b4_st4[ib4]\
             * banduval[ib1, ib2, ib3, ib4, p_b1_k1, p_b2_k2, p_b3_k3]#bv#
+        ndit.iternext()
+    return result
+
+
+def basis_uval_2(banduval, st1, st2, st3, st4, patchdic, spats, ppats):
+    '''获得basis上的u值'''
+    #pylint: disable=invalid-name
+    #对b1, b2, b3, b4求和
+    #U_{st1,st2,st3,st4}(k1,k2,k3,k4) = \sum_{b1,b2,b3,b4}
+    # R*_{b1,st1}(k1)R*_{b2,st2}(k2)R_{b3,st3}(k3)R_{b4,st4}(k4)
+    # U_{b1,b2,b3,b4}(k1,k2,k3,k4) --> U_{b1,b2,b3,b4}(P_b1(k1),P_b2(k2),P_b3(k3),P_b4(k4))
+    # patchdic是（2,3）的，第一位是带，第二位是索引
+    bpats = [spats, ppats]
+    place_holder = numpy.ndarray((2, 2, 2, 2))
+    result = 0.
+    ndit = numpy.nditer(place_holder, flags=['multi_index'])
+    while not ndit.finished:
+        ib1, ib2, ib3, ib4 = ndit.multi_index
+        p_b1_k1 = patchdic[ib1, 0]
+        p_b2_k2 = patchdic[ib2, 1]
+        p_b3_k3 = patchdic[ib3, 2]
+        kv1 = bpats[ib1][p_b1_k1]
+        kv2 = bpats[ib2][p_b2_k2]
+        kv3 = bpats[ib3][p_b3_k3]
+        kv4 = shift_kv(shift_kv(kv1, kv2), Point(-kv3.coord[0], -kv3.coord[1], 1))
+        #st1这个格子
+        sq1 = numpy.sqrt(numpy.square(STRIPE) + 2 * numpy.cos(kv1.coord[0]) + 2)
+        #
+        eig_s_A = 2 * numpy.cos(kv1.coord[0] / 2.0)
+        eig_s_A = eig_s_A / (STRIPE - sq1)
+        eig_p_A = 2 * numpy.cos(kv1.coord[0] / 2.0)
+        eig_p_A = eig_p_A / (STRIPE + sq1)
+        #求归一化系数
+        norm1_st1 = 1 + numpy.square(eig_s_A)
+        norm2_st1 = 1 + numpy.square(eig_p_A)
+        #
+        Rs_b1_st1 = numpy.zeros(2, dtype=numpy.complex)
+        #如果第一个是A
+        if st1 == 0:
+            Rs_b1_st1[0] = eig_s_A / numpy.sqrt(norm1_st1)#Rs_s_A
+            Rs_b1_st1[1] = eig_p_A / numpy.sqrt(norm2_st1)#Rs_p_A
+        #如果第一个是B
+        elif st1 == 1:
+            Rs_b1_st1 += numpy.cos(kv1.coord[0] / 2.0)#Rs_s_B和Rs_p_B的实部
+            Rs_b1_st1.imag += numpy.sin(kv1.coord[0] / 2.0)#Rs_s_B和Rs_p_B的虚部
+            Rs_b1_st1[0] /= numpy.sqrt(norm1_st1)
+            Rs_b1_st1[1] /= numpy.sqrt(norm2_st1)
+        else:
+            raise ValueError('st1数值不对')
+        #st2这个格子
+        sq2 = numpy.sqrt(numpy.square(STRIPE) + 2 * numpy.cos(kv2.coord[0]) + 2)
+        #
+        eig_s_A = 2 * numpy.cos(kv2.coord[0] / 2.0)
+        eig_s_A = eig_s_A / (STRIPE - sq2)
+        eig_p_A = 2 * numpy.cos(kv2.coord[0] / 2.0)
+        eig_p_A = eig_p_A / (STRIPE + sq2)
+        #求归一化系数
+        norm1_st2 = 1 + numpy.square(eig_s_A)
+        norm2_st2 = 1 + numpy.square(eig_p_A)
+        #
+        Rs_b2_st2 = numpy.zeros(2, dtype=numpy.complex)
+        #如果st2是A
+        if st2 == 0:
+            Rs_b2_st2[0] = eig_s_A / numpy.sqrt(norm1_st2)#Rs_s_A
+            Rs_b2_st2[1] = eig_p_A / numpy.sqrt(norm2_st2)#Rs_p_A
+        #如果st2是B
+        elif st2 == 1:
+            Rs_b2_st2 += numpy.cos(kv2.coord[0] / 2.0)#Rs_s_B和Rs_p_B的实部
+            Rs_b2_st2.imag += numpy.sin(kv2.coord[0] / 2.0)#Rs_s_B和Rs_p_B的虚部
+            Rs_b2_st2[0] /= numpy.sqrt(norm1_st2)
+            Rs_b2_st2[1] /= numpy.sqrt(norm2_st2)
+        else:
+            raise ValueError('st2数值不对')
+        #st3这个格子
+        sq3 = numpy.sqrt(numpy.square(STRIPE) + 2 * numpy.cos(kv3.coord[0]) + 2)
+        #
+        eig_s_A = 2 * numpy.cos(kv3.coord[0] / 2.0)
+        eig_s_A = eig_s_A / (STRIPE - sq3)
+        eig_p_A = 2 * numpy.cos(kv3.coord[0] / 2.0)
+        eig_p_A = eig_p_A / (STRIPE + sq3)
+        #求归一化系数
+        norm1_st3 = 1 + numpy.square(eig_s_A)
+        norm2_st3 = 1 + numpy.square(eig_p_A)
+        #
+        R_b3_st3 = numpy.zeros(2, dtype=numpy.complex)
+        #如果st3是A
+        if st3 == 0:
+            R_b3_st3[0] = eig_s_A / numpy.sqrt(norm1_st3)#R_s_A
+            R_b3_st3[1] = eig_p_A / numpy.sqrt(norm2_st3)#R_p_A
+        #如果st3是B
+        elif st3 == 1:
+            R_b3_st3 += numpy.cos(kv3.coord[0] / 2.0)#R_s_B和R_p_B的实数
+            R_b3_st3.imag += -numpy.sin(kv3.coord[0] / 2.0)#R_s_B和R_p_B的虚数
+            R_b3_st3[0] /= numpy.sqrt(norm1_st3)
+            R_b3_st3[1] /= numpy.sqrt(norm2_st3)
+        else:
+            raise ValueError('st3数值不对')
+        #st4这个格子
+        sq4 = numpy.sqrt(numpy.square(STRIPE) + 2 * numpy.cos(kv4.coord[0]) + 2)
+        #
+        eig_s_A = 2 * numpy.cos(kv4.coord[0] / 2.0)
+        eig_s_A = eig_s_A / (STRIPE - sq4)
+        eig_p_A = 2 * numpy.cos(kv4.coord[0] / 2.0)
+        eig_p_A = eig_p_A / (STRIPE + sq4)
+        #求归一化系数
+        norm1_st4 = 1 + numpy.square(eig_s_A)
+        norm2_st4 = 1 + numpy.square(eig_p_A)
+        #
+        R_b4_st4 = numpy.zeros(2, dtype=numpy.complex)
+        #如果st4是A
+        if st4 == 0:
+            R_b4_st4[0] = eig_s_A / numpy.sqrt(norm1_st4)#R_s_A
+            R_b4_st4[1] = eig_p_A / numpy.sqrt(norm2_st4)#R_p_A
+        elif st4 == 1:
+            R_b4_st4 += numpy.cos(kv4.coord[0] / 2.0)#R_s_B和R_p_B的实数
+            R_b4_st4.imag += -numpy.sin(kv4.coord[0] / 2.0)#R_s_B和R_p_B的虚数
+            R_b4_st4[0] /= numpy.sqrt(norm1_st4)
+            R_b4_st4[1] /= numpy.sqrt(norm2_st4)
+        else:
+            raise ValueError('st4数值不对')
+        result += Rs_b1_st1[ib1] * Rs_b2_st2[ib2] * R_b3_st3[ib3] * R_b4_st4[ib4]\
+            * banduval[ib1, ib2, ib3, ib4, p_b1_k1, p_b2_k2, p_b3_k3]
         ndit.iternext()
     return result
 
@@ -440,7 +558,8 @@ def inverse_uval(pinfos, spats, ppats, uval):
         patdic[:, 0] = allpatdic[:, idx1]
         patdic[:, 1] = allpatdic[:, idx2]
         patdic[:, 2] = allpatdic[:, idx3]
-        bval = basis_uval(uval, st1, st2, st3, st4, kv1, kv2, kv3, kv4, patdic)
+        #bval = basis_uval(uval, st1, st2, st3, st4, kv1, kv2, kv3, kv4, patdic)
+        bval = basis_uval_2(uval, st1, st2, st3, st4, patdic, spats, ppats)
         place_holder[st1, st2, st3, st4, idx1, idx2, idx3] = numpy.real(bval)
         img_part[st1, st2, st3, st4, idx1, idx2, idx3] = numpy.imag(bval)
         phiter.iternext()

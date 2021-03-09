@@ -176,6 +176,7 @@ def draw_basis_channel(args):
     #
     draw_heatmap(ubas[0, 0, 0, 0, :, :, 4])
     draw_heatmap(ubas[0, 1, 1, 0, :, :, 4])
+    draw_heatmap(ubas[1, 0, 0, 1, :, :, 4])
     draw_heatmap(ubas[1, 1, 1, 1, :, :, 4])
     #c2i = {'s': [0], 'p': [1], '?': [0, 1]}
     #i2c = {0: 's', 1: 'p'}
