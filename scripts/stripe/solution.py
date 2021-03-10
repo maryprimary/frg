@@ -41,10 +41,10 @@ def load_brillouin(args):
     mlpats[0, :] = slpats
     mlpats[1, :] = plpats
     #
-    return ltris, ladjs, mpinfo, mlpats
+    return brlu, ltris, ladjs, mpinfo, mlpats
 
 
-def slove_equ(args, ltris, ladjs, mpinfo, mlpats):
+def slove_equ(args, brlu, ltris, ladjs, mpinfo, mlpats):
     '''解方程'''
     #初始化U
     spats = mpinfo[0, :]
@@ -54,7 +54,7 @@ def slove_equ(args, ltris, ladjs, mpinfo, mlpats):
     lamb0 = get_max_val()
     print('lamb0 = ', lamb0)
     hubbard.config_init(
-        ltris, ladjs, mpinfo, mlpats,
+        brlu, ltris, ladjs, mpinfo, mlpats,
         [s_band_disp, p_band_disp], [s_band_gd, p_band_gd],
         shift_kv, lamb0
     )
@@ -186,8 +186,8 @@ def main():
     print('patch数量', args.patches)
     print('布里渊区网格数量', args.mesh)
     print('读取自 ', args.prefix)
-    ltris, ladjs, mpinfo, mlpats = load_brillouin(args)
-    slove_equ(args, ltris, ladjs, mpinfo, mlpats)
+    brlu, ltris, ladjs, mpinfo, mlpats = load_brillouin(args)
+    slove_equ(args, brlu, ltris, ladjs, mpinfo, mlpats)
 
 
 if __name__ == '__main__':
