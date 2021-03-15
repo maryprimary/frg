@@ -5,7 +5,7 @@
 
 import multiprocessing
 import numpy
-from basics import Point
+from basics import Point, get_procs_num
 from fermi.patches import find_patch
 from fermi.surface import const_energy_line_in_patches
 from fermi.multiband_bubble import pi_ab_plus_ec, pi_ab_minus_ec
@@ -79,7 +79,7 @@ class _Config():
         #找到每个对应的n4
         #现在每个带都有自己的idx4
         #self._mk4tab = numpy.ndarray(U.shape, dtype=numpy.int)
-        pool = multiprocessing.Pool(4)
+        pool = multiprocessing.Pool(get_procs_num())
         data_list = []
         idxit = numpy.nditer(U, flags=['multi_index'])
         step = numpy.minimum(brlu.width, brlu.height) / 10 / self._nps
@@ -272,7 +272,7 @@ def precompute_qpp(lval):
         )
         nditer.iternext()
     #pi_ab_minus_ec(anposi, annega, lamb, q_pp, mdisp[beta], ksft)
-    pool = multiprocessing.Pool(4)
+    pool = multiprocessing.Pool(get_procs_num())
     result = pool.starmap(pi_ab_minus_ec, data_list)
     QUICKQPP[lval] = numpy.reshape(result, place_holder.shape)
 
@@ -320,7 +320,7 @@ def precompute_qfs(lval):
         )
         nditer.iternext()
     #pi_ab_plus_ec(anposi, annega, lamb, q_fs, mdisp[beta], ksft)
-    pool = multiprocessing.Pool(4)
+    pool = multiprocessing.Pool(get_procs_num())
     result = pool.starmap(pi_ab_plus_ec, data_list)
     QUICKQFS[lval] = numpy.reshape(result, place_holder.shape)
 
@@ -369,7 +369,7 @@ def precompute_nqfs(lval):
         )
         nditer.iternext()
     #pi_ab_plus_ec(anposi, annega, lamb, nq_fs, mdisp[beta], ksft)
-    pool = multiprocessing.Pool(4)
+    pool = multiprocessing.Pool(get_procs_num())
     result = pool.starmap(pi_ab_plus_ec, data_list)
     QUICKNQFS[lval] = numpy.reshape(result, place_holder.shape)
 
@@ -417,7 +417,7 @@ def precompute_qex(lval):
         )
         nditer.iternext()
     #pi_ab_plus_ec(anposi, annega, lamb, q_ex, mdisp[beta], ksft)
-    pool = multiprocessing.Pool(4)
+    pool = multiprocessing.Pool(get_procs_num())
     result = pool.starmap(pi_ab_plus_ec, data_list)
     QUICKQEX[lval] = numpy.reshape(result, place_holder.shape)
 
@@ -466,7 +466,7 @@ def precompute_nqex(lval):
         )
         nditer.iternext()
     #pi_ab_plus_ec(anposi, annega, lamb, nq_ex, mdisp[beta], ksft)
-    pool = multiprocessing.Pool(4)
+    pool = multiprocessing.Pool(get_procs_num())
     result = pool.starmap(pi_ab_plus_ec, data_list)
     QUICKNQEX[lval] = numpy.reshape(result, place_holder.shape)
 

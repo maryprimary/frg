@@ -13,7 +13,10 @@ scripts/stripe/*
 !scripts/stripe/brillouin.py
 !scripts/stripe/solution.py
 !scripts/stripe/visualize.py
-
+!scripts/rectbrlu
+scripts/rectbrlu/*
+!scripts/rectbrlu/brillouin.py
+!scripts/rectbrlu/solution.py
 
 #性能分析
 profile/*

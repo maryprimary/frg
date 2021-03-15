@@ -7,11 +7,10 @@ import argparse
 import numpy
 from basics import get_procs_num
 #格子的相关功能
-from fermi.square import dispersion, dispersion_gradient, shift_kv
-from fermi.square import hole_disp
+from fermi.rectangle import dispersion, dispersion_gradient, shift_kv
 #加载布里渊区的配置
-from fermi.patches import get_patches
-from helpers.triangulated import load_from as triload
+from fermi.rectangle import get_rect_patches
+from helpers.rttriangulated import load_from as triload
 from helpers.discretization import load_from as patload
 #和方程相关
 from helpers.drawer import draw_heatmap
@@ -20,42 +19,30 @@ from flowequ import hubbard
 
 def load_brillouin(args):
     '''加载布里渊区的配置'''
-    disp = {
-        'square': dispersion, 'hole': hole_disp
-    }[args.disp]
-    dispgd = {
-        'square': dispersion_gradient, 'hole': dispersion_gradient
-    }[args.disp]
     brlu, nps, ltris, ladjs =\
-        triload('{0}_triangle_{1}.txt'.format(args.prefix, args.disp))
+        triload('{0}_tris.txt'.format(args.prefix))
     if nps != args.mesh:
         raise ValueError('mesh数量对应不上')
-    pinfo = get_patches(brlu, args.patches, disp)
-    lpats = patload('{0}_district_{1}.txt'.format(args.prefix, args.disp))
+    pinfo = get_rect_patches(args.patches, args.disp)
+    lpats = patload('{0}_district.txt'.format(args.prefix))
     return brlu, ltris, ladjs, pinfo, lpats
 
 
 def slove_equ(args, brlu, ltris, ladjs, pinfo, lpats):
     '''解方程'''
-    disp = {
-        'square': dispersion, 'hole': hole_disp
-    }[args.disp]
-    dispgd = {
-        'square': dispersion_gradient, 'hole': dispersion_gradient
-    }[args.disp]
     #初始化U
     hubbard.uinit(1.0, args.patches)
     #初始化hubbard模型
     hubbard.config_init(
         brlu, ltris, ladjs, pinfo, lpats,
-        disp, dispgd, shift_kv, 4.0
+        dispersion, dispersion_gradient, shift_kv, 4.0
     )
     #输出文件夹
-    if not os.path.isdir('heatmap5'):
-        os.mkdir('heatmap5')
+    if not os.path.isdir('heatmap7'):
+        os.mkdir('heatmap7')
     lval = 0.
     lstep = 0.01
-    draw_heatmap(hubbard.U[:, :, 0], save='heatmap5/{:.2f}.jpg'.format(lval))
+    draw_heatmap(hubbard.U[:, :, 0], save='heatmap7/{:.2f}.jpg'.format(lval))
     for _ in range(320):
         #duval = numpy.zeros_like(hubbard.U)
         hubbard.precompute_contour(lval)
@@ -80,7 +67,7 @@ def slove_equ(args, brlu, ltris, ladjs, pinfo, lpats):
         #这两个过程不能放在一起，因为计算dl_ec的时候用到了hubbard.U
         hubbard.U += duval * lstep
         lval += lstep
-        draw_heatmap(hubbard.U[:, :, 0], save='heatmap5/{:.2f}.jpg'.format(lval))
+        draw_heatmap(hubbard.U[:, :, 0], save='heatmap7/{:.2f}.jpg'.format(lval))
 
 
 def main():
@@ -90,10 +77,11 @@ def main():
         description='precompute patches'
     )
     parser.add_argument('-p', '--patches', type=int, required=True, help='patches number')
-    parser.add_argument('-d', '--disp', type=str, default='square', help='dispersion')
+    #parser.add_argument('-d', '--disp', type=str, default='square', help='dispersion')
     parser.add_argument('-m', '--mesh', type=int, default=50, help='triangles number')
-    parser.add_argument('--prefix', type=str, default='scripts/square', help='saved file prefix')
+    parser.add_argument('--prefix', type=str, default='scripts/rectbrlu/squ', help='saved file prefix')
     args = parser.parse_args()
+    setattr(args, 'disp', 'square')
     print('色散 ', args.disp)
     print('patch数量', args.patches)
     print('布里渊区网格数量', args.mesh)
@@ -105,4 +93,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    #cProfile.run('main()', 'profile/contour.raw')

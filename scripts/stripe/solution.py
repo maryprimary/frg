@@ -4,7 +4,8 @@ import os
 import multiprocessing
 import argparse
 import numpy
-from fermi.stripesquare import set_stripe
+from basics import get_procs_num
+from fermi.stripesquare import set_stripe, set_potential
 from fermi.stripesquare import get_s_band_patches, get_p_band_patches
 from fermi.stripesquare import get_initu
 from fermi.stripesquare import s_band_disp, s_band_gd, p_band_disp, p_band_gd
@@ -18,19 +19,21 @@ from helpers.discretization import district_visualize
 def load_brillouin(args):
     '''加载布里渊区的配置'''
     set_stripe(args.stripe)
+    set_potential(args.nu)
     brlu, nps, ltris, ladjs =\
-        triload('{0}_{1:.2f}_tris.txt'.format(args.prefix, args.stripe))
+        triload('{0}_{1:.2f}_{2:.2f}_tris.txt'.\
+            format(args.prefix, args.stripe, args.nu))
     if nps != args.mesh:
         raise ValueError('mesh数量对应不上')
     #找到patches
     spats = get_s_band_patches(args.patches)
     ppats = get_p_band_patches(args.patches)
     #s带的patch
-    slpats = patload('{0}_s_district_{1:.2f}.txt'\
-        .format(args.prefix, args.stripe))
+    slpats = patload('{0}_{1:.2f}_{2:.2f}_spt.txt'\
+        .format(args.prefix, args.stripe, args.nu))
     #p带的patch
-    plpats = patload('{0}_p_district_{1:.2f}.txt'\
-        .format(args.prefix, args.stripe))
+    plpats = patload('{0}_{1:.2f}_{2:.2f}_ppt.txt'\
+        .format(args.prefix, args.stripe, args.nu))
     #district_visualize(ltris, slpats, 'show')
     #district_visualize(ltris, plpats, 'show')
     #整理成数组
@@ -62,7 +65,8 @@ def slove_equ(args, brlu, ltris, ladjs, mpinfo, mlpats):
     #输出文件夹
     if not os.path.isdir('heatmap6'):
         os.mkdir('heatmap6')
-    rpath = 'heatmap6/s{:.2f}'.format(args.stripe)
+    rpath = 'heatmap6/s{0:.2f}nu{1:.2f}'.\
+        format(args.stripe, args.nu)
     if not os.path.isdir(rpath):
         os.mkdir(rpath)
     #
@@ -114,7 +118,7 @@ def slove_equ(args, brlu, ltris, ladjs, mpinfo, mlpats):
         hubbard.precompute_nqex(lval)
         #进程池
         #KNOWN ISSUE: 在修改全局变量之间建立的Pool，里面不会包含全局变量
-        pool = multiprocessing.Pool(4)
+        pool = multiprocessing.Pool(get_procs_num())
         #计算每个idx的导数
         data_list = []
         ndit = numpy.nditer(hubbard.U, flags=['multi_index'])
@@ -177,12 +181,14 @@ def main():
         description='compute equation'
     )
     parser.add_argument('-p', '--patches', type=int, required=True, help='patches number')
-    parser.add_argument('-s', '--stripe', type=float, default='square', help='stripe strength')
+    parser.add_argument('-s', '--stripe', type=float, required=True, help='stripe strength')
+    parser.add_argument('-n', '--nu', type=float, required=True, help='hole doped')
     parser.add_argument('-m', '--mesh', type=int, default=50, help='triangles number')
     parser.add_argument('--prefix', type=str, default='scripts/stripe/str',\
         help='saved file prefix')
     args = parser.parse_args()
     print('stripe强度 ', args.stripe)
+    print('掺杂的化学势 ', args.nu)
     print('patch数量', args.patches)
     print('布里渊区网格数量', args.mesh)
     print('读取自 ', args.prefix)
