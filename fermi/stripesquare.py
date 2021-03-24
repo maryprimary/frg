@@ -563,7 +563,7 @@ def inverse_uval(pinfos, spats, ppats, uval):
     phiter = numpy.nditer(place_holder, flags=['multi_index'])
     step = numpy.pi / 100
     #找出这些patches对应的P_b(k)
-    allpatdic = numpy.ndarray((2, pnum), dtype=numpy.int)
+    allpatdic = numpy.ndarray((2, pnum), dtype=int)
     #print(pinfos[0])
     #print(find_patch(pinfos[0], spats, s_band_disp, s_band_gd, step))
     #print(find_patch(pinfos[0], ppats, p_band_disp, p_band_gd, step))
@@ -578,7 +578,7 @@ def inverse_uval(pinfos, spats, ppats, uval):
         kv3 = pinfos[idx3]
         kv4 = shift_kv(shift_kv(kv1, kv2), Point(-kv3.coord[0], -kv3.coord[1], 1))
         #每个点在不同能带下对应的patch
-        patdic = numpy.ndarray((2, 3), dtype=numpy.int)
+        patdic = numpy.ndarray((2, 3), dtype=int)
         patdic[:, 0] = allpatdic[:, idx1]
         patdic[:, 1] = allpatdic[:, idx2]
         patdic[:, 2] = allpatdic[:, idx3]

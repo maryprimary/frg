@@ -64,9 +64,6 @@ def slove_equ(args, brlu, ltris, ladjs, pinfo, lpats):
         hubbard.precompute_nqfs(lval)
         hubbard.precompute_qex(lval)
         hubbard.precompute_nqex(lval)
-        #进程池
-        #KNOWN ISSUE: 在修改全局变量之间建立的Pool，里面不会包含全局变量
-        pool = multiprocessing.Pool(get_procs_num())
         #计算每个idx的导数
         data_list = []
         for idx1 in range(args.patches):
@@ -74,7 +71,10 @@ def slove_equ(args, brlu, ltris, ladjs, pinfo, lpats):
                 for idx3 in range(args.patches):
                     data_list.append((lval, idx1, idx2, idx3))
                     #duval[idx1, idx2, idx3] = hubbard.dl_ec(lval, idx1, idx2, idx3)
-        result = pool.starmap(hubbard.dl_ec, data_list)
+        #进程池
+        #KNOWN ISSUE: 在修改全局变量之间建立的Pool，里面不会包含全局变量
+        with multiprocessing.Pool(get_procs_num()) as pool:
+            result = pool.starmap(hubbard.dl_ec, data_list)
         duval = numpy.reshape(result, (args.patches, args.patches, args.patches))
         #把每个idx的值加上
         #这两个过程不能放在一起，因为计算dl_ec的时候用到了hubbard.U

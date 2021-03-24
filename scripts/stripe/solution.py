@@ -40,7 +40,7 @@ def load_brillouin(args):
     mpinfo = numpy.ndarray((2, args.patches), dtype=object)
     mpinfo[0, :] = spats
     mpinfo[1, :] = ppats
-    mlpats = numpy.ndarray((2, len(ltris)), dtype=numpy.int)
+    mlpats = numpy.ndarray((2, len(ltris)), dtype=int)
     mlpats[0, :] = slpats
     mlpats[1, :] = plpats
     #
@@ -91,9 +91,6 @@ def slove_equ(args, brlu, ltris, ladjs, mpinfo, mlpats):
         hubbard.precompute_nqfs(lval)
         hubbard.precompute_qex(lval)
         hubbard.precompute_nqex(lval)
-        #进程池
-        #KNOWN ISSUE: 在修改全局变量之间建立的Pool，里面不会包含全局变量
-        pool = multiprocessing.Pool(get_procs_num())
         #计算每个idx的导数
         data_list = []
         ndit = numpy.nditer(hubbard.U, flags=['multi_index'])
@@ -101,14 +98,17 @@ def slove_equ(args, brlu, ltris, ladjs, mpinfo, mlpats):
             bd1, bd2, bd3, bd4, idx1, idx2, idx3 = ndit.multi_index
             data_list.append((lval, bd1, bd2, bd3, bd4, idx1, idx2, idx3))
             ndit.iternext()
-        result = pool.starmap(hubbard.dl_ec, data_list)
+        #进程池
+        #KNOWN ISSUE: 在修改全局变量之间建立的Pool，里面不会包含全局变量
+        with multiprocessing.Pool(get_procs_num()) as pool:
+            result = pool.starmap(hubbard.dl_ec, data_list)
         duval = numpy.reshape(result, hubbard.U.shape)
         #把每个idx的值加上
         #这两个过程不能放在一起，因为计算dl_ec的时候用到了hubbard.U
         hubbard.U += duval * lstep
         lval += lstep
         #
-        del data_list, result, duval, pool
+        del data_list, result, duval
         #
         #uval2 = numpy.load('{0}/{1:.2f}U.chk'.format(rpath, 10.76))
         #if lval == 10.76:
