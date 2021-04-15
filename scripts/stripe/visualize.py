@@ -90,7 +90,7 @@ def draw_mixed_channel(args):
 
 def draw_count_channel(args):
     '''绘制通道混合在一起的结果'''
-    rpath = 'heatmap6/s{:.2f}nu{:.2f}'.format(args.stripe, args.dope)
+    rpath = 'heatmap6/U2/s{:.2f}nu{:.2f}'.format(args.stripe, args.dope)
     uval = numpy.load('{0}/{1:.2f}U.npy'.format(rpath, args.lval))
     #uval2 = numpy.load('{0}/{1:.2f}U.npz'.format(rpath, args.lval))
     #print(numpy.allclose(uval, uval2))

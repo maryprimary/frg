@@ -52,7 +52,7 @@ def slove_equ(args, brlu, ltris, ladjs, mpinfo, mlpats):
     #初始化U
     spats = mpinfo[0, :]
     ppats = mpinfo[1, :]
-    hubbard.uinit(get_initu(spats, ppats, 1.0), args.patches, 2)
+    hubbard.uinit(get_initu(spats, ppats, 2.0), args.patches, 2)
     #初始化hubbard模型
     lamb0 = get_max_val()
     print('lamb0 = ', lamb0)
