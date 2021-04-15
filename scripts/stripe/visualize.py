@@ -5,13 +5,13 @@ import argparse
 import numpy
 from helpers.drawer import draw_heatmap, draw_points
 from basics import Point
-from fermi.stripesquare import inverse_uval, set_stripe
+from fermi.stripesquare import inverse_uval, set_stripe, set_potential
 from fermi.stripesquare import get_s_band_patches, get_p_band_patches
 
 
 def draw_single_channel(args):
     '''绘制单通道的图片结果'''
-    rpath = 'heatmap6/s{:.2f}'.format(args.stripe)
+    rpath = 'heatmap6/s{:.2f}nu{:.2f}'.format(args.stripe, args.dope)
     uval = numpy.load('{0}/{1:.2f}U.npy'.format(rpath, args.lval))
     #
     c2i = {'s': [0], 'p': [1], '?': [0, 1]}
@@ -36,7 +36,7 @@ def draw_single_channel(args):
 
 def draw_mixed_channel(args):
     '''绘制通道混合在一起的结果'''
-    rpath = 'heatmap6/s{:.2f}'.format(args.stripe)
+    rpath = 'heatmap6/s{:.2f}nu{:.2f}'.format(args.stripe, args.dope)
     uval = numpy.load('{0}/{1:.2f}U.npy'.format(rpath, args.lval))
     #按照逆时针顺序来给带排序
     shape = numpy.shape(uval)
@@ -90,8 +90,10 @@ def draw_mixed_channel(args):
 
 def draw_count_channel(args):
     '''绘制通道混合在一起的结果'''
-    rpath = 'heatmap6/s{:.2f}'.format(args.stripe)
+    rpath = 'heatmap6/U2/s{:.2f}nu{:.2f}'.format(args.stripe, args.dope)
     uval = numpy.load('{0}/{1:.2f}U.npy'.format(rpath, args.lval))
+    #uval2 = numpy.load('{0}/{1:.2f}U.npz'.format(rpath, args.lval))
+    #print(numpy.allclose(uval, uval2))
     #按照逆时针顺序来给带排序
     shape = numpy.shape(uval)
     bnum, pnum = shape[0], shape[4]
@@ -149,8 +151,7 @@ def draw_count_channel(args):
 
 def draw_basis_channel(args):
     '''在子格子的表示上显示'''
-    set_stripe(args.stripe)
-    rpath = 'heatmap6/s{:.2f}'.format(args.stripe)
+    rpath = 'heatmap6/s{:.2f}nu{:.2f}'.format(args.stripe, args.dope)
     uval = numpy.load('{0}/{1:.2f}U.npy'.format(rpath, args.lval))
     #找到动量空间中的几个代表点
     upatches = numpy.ndarray(32, dtype=Point)
@@ -165,10 +166,14 @@ def draw_basis_channel(args):
     #    upatches[24 + idx] = Point(xval, -yval, 1)
     #draw_points(upatches)
     set_stripe(0.)
+    set_potential(0.)
     upatches[:16] = get_s_band_patches(16)
     upatches[16:] = get_p_band_patches(16)
     draw_points(upatches)
+    #上面设置stripe和potential为0目的是得到相应的点
+    #现在要设置回来，因为后面反变换回来的时候需要find_patch
     set_stripe(args.stripe)
+    set_potential(args.dope)
     #
     spats = get_s_band_patches(16)
     ppats = get_p_band_patches(16)
@@ -193,6 +198,7 @@ def main():
     )
     parser.add_argument('-m', '--mode', type=str, required=True, help='drawing mode')
     parser.add_argument('-s', '--stripe', type=float, required=True, help='stripe strength')
+    parser.add_argument('-d', '--dope', type=float, required=True, help='hole dope')
     parser.add_argument('-l', '--lval', type=float, required=True, help='lval')
     parser.add_argument('-c', '--channel', type=str, required=True, help='which band')
     parser.add_argument('-n', '--n3idx', type=int, help='require if single mode')

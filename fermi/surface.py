@@ -59,3 +59,14 @@ def const_energy_line_in_patches(rtris, adjs, lpats, eng, dispfun):
                 #如果大于0和小于0的不在一个patch，会产生一些混淆。但是没明显的影响。
                 epidx.append(lpats[idx])
     return edges, epidx
+
+
+def filling_factor(ltris, dispfun):
+    '''被占据的面积'''
+    tot_area = len(ltris)
+    results = []
+    for tri in ltris:
+        kpt = tri.center.coord
+        if dispfun(kpt[0], kpt[1]) < 0.0:
+            results.append(tri)
+    return len(results) / tot_area, results

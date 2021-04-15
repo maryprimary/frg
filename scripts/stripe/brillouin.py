@@ -7,7 +7,7 @@ from matplotlib import pyplot
 import matplotlib.patches as patches
 import matplotlib.path as path
 #
-from fermi.stripesquare import brillouin, set_stripe, get_max_val
+from fermi.stripesquare import brillouin, set_stripe, get_max_val, set_potential
 from fermi.stripesquare import s_band_disp, p_band_disp
 from fermi.stripesquare import s_band_gd, p_band_gd
 from fermi.stripesquare import get_s_band_patches, get_p_band_patches
@@ -23,10 +23,12 @@ def precompute(args):
     '''提前计算'''
     brlu = brillouin()
     set_stripe(args.stripe)
+    set_potential(args.nu)
     #切分布里渊区
     ltris, ladjs = square_split(brlu, args.mesh)
     tri_save_to(
-        '{0}_{1:.2f}_tris.txt'.format(args.prefix, args.stripe),
+        '{0}_{1:.2f}_{2:.2f}_tris.txt'.\
+            format(args.prefix, args.stripe, args.nu),
         brlu, args.mesh, ltris, ladjs
         )
     #找到patches
@@ -67,7 +69,8 @@ def precompute(args):
         xvals = [_pt.coord[0] for _pt in seg.ends]
         yvals = [_pt.coord[1] for _pt in seg.ends]
         pyplot.plot(xvals, yvals, c='k', lw=1)
-    pyplot.savefig('{0}_{1:.2f}_surface.svg'.format(args.prefix, args.stripe))
+    pyplot.savefig('{0}_{1:.2f}_{2:.2f}_sur.svg'.\
+        format(args.prefix, args.stripe, args.nu))
     pyplot.close()
     #
     step = 3.1415927 / args.mesh / 2
@@ -75,18 +78,18 @@ def precompute(args):
     for tri in ltris:
         pt_ = find_patch(tri.center, spats, s_band_disp, s_band_gd, step)
         slpats.append(pt_)
-    dis_save_to('{0}_s_district_{1:.2f}.txt'\
-        .format(args.prefix, args.stripe), slpats)
-    district_visualize(ltris, slpats, '{0}_s_district_{1:.2f}.svg'\
-        .format(args.prefix, args.stripe))
+    dis_save_to('{0}_{1:.2f}_{2:.2f}_spt.txt'\
+        .format(args.prefix, args.stripe, args.nu), slpats)
+    district_visualize(ltris, slpats, '{0}_{1:.2f}_{2:.2f}_spt.svg'\
+        .format(args.prefix, args.stripe, args.nu))
     plpats = []
     for tri in ltris:
         pt_ = find_patch(tri.center, ppats, p_band_disp, p_band_gd, step)
         plpats.append(pt_)
-    dis_save_to('{0}_p_district_{1:.2f}.txt'\
-        .format(args.prefix, args.stripe), plpats)
-    district_visualize(ltris, plpats, '{0}_p_district_{1:.2f}.svg'\
-        .format(args.prefix, args.stripe))
+    dis_save_to('{0}_{1:.2f}_{2:.2f}_ppt.txt'\
+        .format(args.prefix, args.stripe, args.nu), plpats)
+    district_visualize(ltris, plpats, '{0}_{1:.2f}_{2:.2f}_ppt.svg'\
+        .format(args.prefix, args.stripe, args.nu))
 
 
 def main():
@@ -97,11 +100,13 @@ def main():
     )
     parser.add_argument('-p', '--patches', type=int, required=True, help='patches number')
     parser.add_argument('-s', '--stripe', type=float, required=True, help='stripe strength')
+    parser.add_argument('-n', '--nu', type=float, required=True, help='hole doped')
     parser.add_argument('-m', '--mesh', type=int, default=50, help='triangles number')
     parser.add_argument('--prefix', type=str,\
         default='scripts/stripe/str', help='saved file prefix')
     args = parser.parse_args()
     print('stripe强度 ', args.stripe)
+    print('掺杂的化学势 ', args.nu)
     print('patch数量', args.patches)
     print('布里渊区网格数量', args.mesh)
     precompute(args)

@@ -5,7 +5,7 @@ fRG算法演示
 一致。  
 代码中的公式没有其他说明也是出自这本书。  
 
-运行代码需要`python3(>3.5)`，`numpy`，`scipy`  
+运行代码需要`python3(>3.6)`[1] ，`numpy`，`scipy`， `matplotlib`  
 首先要生成描述第一布里渊区的文件
 ```bash
 python3 scripts/square_brillouin.py -p 16
@@ -31,3 +31,7 @@ python3 scripts/square_solution_multi.py -p 16
 
 > \[--prefix\]  
 用来保存和读取布里渊区描述文件的路径
+
+## 注意事项
+
+- [1] python3.6中的Process不能正确的释放资源，**可能**导致程序的运行出现问题，可以用 `with` 块来处理Process，但不推荐python3.6。（[https://bugs.python.org/issue30596](https://bugs.python.org/issue30596)）

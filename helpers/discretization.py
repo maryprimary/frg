@@ -58,6 +58,19 @@ def district_visualize(ltris, lpatches, show):
     pyplot.close()
 
 
+def get_patch_edges(ltris, ladjs, lpats):
+    '''得到patch之间的边界'''
+    egs = []
+    tri2pat = dict(((tri, pat) for tri, pat in zip(ltris, lpats)))
+    for tri, adjs in zip(ltris, ladjs):
+        for eidx, adj in enumerate(adjs, 0):
+            if adj is None:
+                continue
+            if tri2pat[adj] > tri2pat[tri]:
+                egs.append(tri.edges[eidx])
+    return egs
+
+
 def save_to(fname, lpatches):
     '''保存patches，lpatches应该是对应好Rtriangles的顺序的\n
     ```没有直接把pidx放到Rtriabgles的attr里面，这个顺序要对应好```

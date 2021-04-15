@@ -6,3 +6,4 @@ from .point import Point
 from .line import Segment
 from .rectangle import Square, Rectangle
 from .triangle import Triangle, Rtriangle
+from .settings import get_procs_num

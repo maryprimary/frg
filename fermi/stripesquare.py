@@ -5,6 +5,9 @@ from scipy import optimize
 from basics import Square, Point, Segment
 
 STRIPE = None
+POTENT = None
+PBANDTOP = None
+
 
 def brillouin():
     '''布里渊区'''
@@ -17,18 +20,31 @@ def set_stripe(sval):
     STRIPE = sval
 
 
+def set_potential(pval):
+    '''设置化学势'''
+    global POTENT, PBANDTOP
+    POTENT = pval
+    #获取顶点的位置
+    if p_band_disp(0.0, numpy.pi) <= 0.0:
+        PBANDTOP = numpy.pi
+    else:
+        PBANDTOP = optimize.bisect(
+            lambda kyv: p_band_disp(0.0, kyv), 0, numpy.pi
+        )
+
+
 def get_max_val():
     '''能带最大的数值'''
     stripe = STRIPE
     sq_max = numpy.square(stripe) + 4
-    return numpy.sqrt(sq_max) + 2.
+    return numpy.sqrt(sq_max) + 2. + POTENT
 
 def s_band_disp(kxv, kyv):
     '''s带的色散关系'''
     stripe = STRIPE
     sq_ = numpy.square(stripe) + 2*numpy.cos(kxv) + 2
     #16*numpy.square(numpy.cos(kxv / 2.0))
-    return -1 * (-numpy.sqrt(sq_) + 2. * numpy.cos(kyv))
+    return -1 * (-numpy.sqrt(sq_) + 2. * numpy.cos(kyv)) + POTENT
     #return -1 * (stripe / 2. - 0.5 * numpy.sqrt(sq_) + 2. * numpy.cos(kyv))
 
 
@@ -37,7 +53,7 @@ def p_band_disp(kxv, kyv):
     stripe = STRIPE
     sq_ = numpy.square(stripe) + 2*numpy.cos(kxv) + 2
     #16*numpy.square(numpy.cos(kxv / 2.0))
-    return -1 * (numpy.sqrt(sq_) + 2. * numpy.cos(kyv))
+    return -1 * (numpy.sqrt(sq_) + 2. * numpy.cos(kyv)) + POTENT
 
 
 def s_band_gd(kxv, kyv):
@@ -64,6 +80,14 @@ def p_band_gd(kxv, kyv):
         target[0] = -numpy.pi
     if kyv < 0:
         target[1] = -numpy.pi
+    #如果超出了边界，那么让他投影到最高的一个patch
+    edge = numpy.pi - numpy.abs(kxv)
+    edge = edge * (numpy.pi - PBANDTOP) / numpy.pi
+    edge = numpy.pi - edge
+    if abs(kyv) >= edge:
+        target[0] = 0.0
+        target[1] = numpy.sign(kyv) * (numpy.pi - PBANDTOP)
+        #target[1] = numpy.sign(kyv) * (PBANDTOP + 2 * abs(kyv - PBANDTOP))
     slope_den = kxv - target[0]
     slope_num = kyv - target[1]
     if slope_den == 0:
@@ -126,7 +150,7 @@ def get_p_band_patches(pnum):
     ppnum = pnum // 4
     patches = []
     gap = numpy.pi / 2 / ppnum
-    maxr = numpy.pi * 1.414
+    maxr = numpy.pi# * 1.414
     #先算左下角
     for idx in range(ppnum):
         angle = (idx + 0.5) * gap
@@ -135,10 +159,10 @@ def get_p_band_patches(pnum):
         def __raddisp(rad):
             '''以半径为基准的色散'''
             xcord = xcoff * rad - numpy.pi
-            ycord = ycoff * rad - numpy.pi
+            ycord = ycoff * rad - PBANDTOP#numpy.pi
             return p_band_disp(xcord, ycord)
         rrad = optimize.bisect(__raddisp, 0., maxr)
-        patches.append(Point(xcoff * rrad - numpy.pi, ycoff * rrad - numpy.pi, 1))
+        patches.append(Point(xcoff * rrad - numpy.pi, ycoff * rrad - PBANDTOP, 1))
     #再算右下角
     for idx in range(ppnum):
         angle = (idx + 0.5) * gap
@@ -147,10 +171,10 @@ def get_p_band_patches(pnum):
         def __raddisp(rad):
             '''以半径为基准的色散'''
             xcord = numpy.pi - xcoff * rad
-            ycord = ycoff * rad - numpy.pi
+            ycord = ycoff * rad - PBANDTOP#numpy.pi
             return p_band_disp(xcord, ycord)
         rrad = optimize.bisect(__raddisp, 0., maxr)
-        patches.append(Point(numpy.pi - xcoff * rrad, ycoff * rrad - numpy.pi, 1))
+        patches.append(Point(numpy.pi - xcoff * rrad, ycoff * rrad - PBANDTOP, 1))
     #再算右上角
     for idx in range(ppnum):
         angle = (idx + 0.5) * gap
@@ -159,10 +183,10 @@ def get_p_band_patches(pnum):
         def __raddisp(rad):
             '''以半径为基准的色散'''
             xcord = numpy.pi - xcoff * rad
-            ycord = numpy.pi - ycoff * rad
+            ycord = PBANDTOP - ycoff * rad#numpy.pi - ycoff * rad
             return p_band_disp(xcord, ycord)
         rrad = optimize.bisect(__raddisp, 0., maxr)
-        patches.append(Point(numpy.pi - xcoff * rrad, numpy.pi - ycoff * rrad, 1))
+        patches.append(Point(numpy.pi - xcoff * rrad, PBANDTOP - ycoff * rrad, 1))
     #再算左上角
     for idx in range(ppnum):
         angle = (idx + 0.5) * gap
@@ -171,10 +195,10 @@ def get_p_band_patches(pnum):
         def __raddisp(rad):
             '''以半径为基准的色散'''
             xcord = xcoff * rad - numpy.pi
-            ycord = numpy.pi - ycoff * rad
+            ycord = PBANDTOP - ycoff * rad#numpy.pi - ycoff * rad
             return p_band_disp(xcord, ycord)
         rrad = optimize.bisect(__raddisp, 0., maxr)
-        patches.append(Point(xcoff * rrad - numpy.pi, numpy.pi - ycoff * rrad, 1))
+        patches.append(Point(xcoff * rrad - numpy.pi, PBANDTOP - ycoff * rrad, 1))
     return patches
 
 
@@ -539,7 +563,7 @@ def inverse_uval(pinfos, spats, ppats, uval):
     phiter = numpy.nditer(place_holder, flags=['multi_index'])
     step = numpy.pi / 100
     #找出这些patches对应的P_b(k)
-    allpatdic = numpy.ndarray((2, pnum), dtype=numpy.int)
+    allpatdic = numpy.ndarray((2, pnum), dtype=int)
     #print(pinfos[0])
     #print(find_patch(pinfos[0], spats, s_band_disp, s_band_gd, step))
     #print(find_patch(pinfos[0], ppats, p_band_disp, p_band_gd, step))
@@ -554,7 +578,7 @@ def inverse_uval(pinfos, spats, ppats, uval):
         kv3 = pinfos[idx3]
         kv4 = shift_kv(shift_kv(kv1, kv2), Point(-kv3.coord[0], -kv3.coord[1], 1))
         #每个点在不同能带下对应的patch
-        patdic = numpy.ndarray((2, 3), dtype=numpy.int)
+        patdic = numpy.ndarray((2, 3), dtype=int)
         patdic[:, 0] = allpatdic[:, idx1]
         patdic[:, 1] = allpatdic[:, idx2]
         patdic[:, 2] = allpatdic[:, idx3]
