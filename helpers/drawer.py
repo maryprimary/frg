@@ -54,7 +54,7 @@ def draw_polygons(rects):
     pyplot.show()
 
 
-def draw_components(pts, sgs, rects, sgcc=None, rtcc=None):
+def draw_components(pts, sgs, rects, sgcc=None, rtcc=None, save='show'):
     '''绘制多组图形\n
     sgcc是线段的color, rtcc是区域的color
     '''
@@ -93,7 +93,10 @@ def draw_components(pts, sgs, rects, sgcc=None, rtcc=None):
         pyplot.gca().add_patch(rectp)
     #pyplot.gca().relim()
     #pyplot.gca().autoscale_view()
-    pyplot.show()
+    if save == "show":
+        pyplot.show()
+    else:
+        pyplot.savefig(save)
 
 
 def draw_heatmap(arra, save='show'):

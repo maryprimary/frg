@@ -46,7 +46,7 @@ class _Config():
     这里面l开头的三个都是和剖分的小三角有关的
     """
     def __init__(self, brlu, ltris, ladjs, pinfo, lpats, disp, dispgd,\
-        ksft, lamb0):
+        ksft, lamb0, find_mode=1):
         self._brlu = brlu
         self._ltris = ltris
         self._nps = numpy.sqrt(len(ltris)) / 2
@@ -77,7 +77,7 @@ class _Config():
                     #    for tri in self._ltris]
                     #idx4_ = numpy.argmin(dislist)
                     #idx4_ = self._lpats[idx4_]
-                    idx4 = find_patch(kv4, pinfo, disp, dispgd, step)
+                    idx4 = find_patch(kv4, pinfo, disp, dispgd, step, mode=find_mode)
                     #assert idx4_ == idx4
                     self._k4tab[idx1, idx2, idx3] = idx4
         #初始化

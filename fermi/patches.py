@@ -37,13 +37,17 @@ def get_patches(brlu: Square, npatch, dispfun):
 
 def find_patch(
         pnt: Point, patches, dispfun, dispgdfun, step,
-        brlim=(numpy.pi, numpy.pi)
+        brlim=(numpy.pi, numpy.pi), mode=1
     ):
     '''找到这个点是属于哪个patch的\n
     dispfun是色散关系的函数，dispgdfun是向费米面投影的梯度\n
     注意这个step最好小于pi / 2 * mesh\n
     brlim是布里渊区的边界，这里是最大的绝对值\n
+    如果mode=1，就是向费米面投影然后找patch的算法，如果mode=2，
+    就是直接找最近的一个点的算法
     '''
+    if mode == 2:
+        return find_patch_mode2(pnt, patches)
     #从这个点引出一条线，如果两端反号，则停止
     kxv, kyv = pnt.coord
     olddisp = dispfun(kxv, kyv)
@@ -102,6 +106,16 @@ def find_patch(
         numpy.square(crsy - pat.coord[1])\
         for pat in patches]
     return numpy.argmin(dis_to_patch)
+
+
+def find_patch_mode2(pnt: Point, patches):
+    '''直接寻找最近的patch'''
+    dislist = []
+    for pat in patches:
+        dis = numpy.square(pat.coord[0] - pnt.coord[0])
+        dis += numpy.square(pat.coord[1] - pnt.coord[1])
+        dislist.append(dis)
+    return numpy.argmin(dislist)
 
 
 def find_patch_old(pnt: Point, patches, dispfun, dispgdfun):

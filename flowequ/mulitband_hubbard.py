@@ -6,7 +6,7 @@
 import multiprocessing
 import numpy
 from basics import Point, get_procs_num
-from fermi.patches import find_patch
+from fermi.patches import find_patch, find_patch_mode2
 from fermi.surface import const_energy_line_in_patches
 from fermi.multiband_bubble import pi_ab_plus_ec, pi_ab_minus_ec
 
@@ -63,7 +63,7 @@ class _Config():
     lamb0是初始值\n
     """
     def __init__(self, brlu, ltris, ladjs, mpinfo, mlpats, \
-        mdisp, mdispgd, ksft, lamb0):
+        mdisp, mdispgd, ksft, lamb0, find_mode=1):
         self._brlu = brlu
         self._ltris = ltris
         self._nps = numpy.sqrt(len(ltris)) / 2
@@ -79,23 +79,42 @@ class _Config():
         #找到每个对应的n4
         #现在每个带都有自己的idx4
         #self._mk4tab = numpy.ndarray(U.shape, dtype=numpy.int)
-        data_list = []
-        idxit = numpy.nditer(U, flags=['multi_index'])
-        step = numpy.minimum(brlu.width, brlu.height) / 10 / self._nps
-        while not idxit.finished:
-            bd1, bd2, bd3, bd4, idx1, idx2, idx3 = idxit.multi_index
-            kv1, kv2, kv3 = mpinfo[bd1, idx1], mpinfo[bd2, idx2], mpinfo[bd3, idx3]
-            kv4 = ksft(ksft(kv1, kv2), Point(-kv3.coord[0], -kv3.coord[1], 1))
-            data_list.append(
-                (kv4, mpinfo[bd4, :], mdisp[bd4], mdispgd[bd4], step)
-            )
-            #idx4 = find_patch(kv4, mpinfo[bd4, :], mdisp[bd4],\
-            #    mdispgd[bd4], numpy.pi / 2 / self._nps)
-            #self._mk4tab[idxit.multi_index] = idx4
-            idxit.iternext()
-        with multiprocessing.Pool(get_procs_num()) as pool:
-            self._mk4tab = pool.starmap(find_patch, data_list)
-        self._mk4tab = numpy.reshape(self._mk4tab, U.shape)
+        if find_mode == 1:
+            data_list = []
+            idxit = numpy.nditer(U, flags=['multi_index'])
+            step = numpy.minimum(brlu.width, brlu.height) / 10 / self._nps
+            while not idxit.finished:
+                bd1, bd2, bd3, bd4, idx1, idx2, idx3 = idxit.multi_index
+                kv1, kv2, kv3 = mpinfo[bd1, idx1], mpinfo[bd2, idx2], mpinfo[bd3, idx3]
+                kv4 = ksft(ksft(kv1, kv2), Point(-kv3.coord[0], -kv3.coord[1], 1))
+                data_list.append(
+                    (kv4, mpinfo[bd4, :], mdisp[bd4], mdispgd[bd4], step)
+                )
+                #idx4 = find_patch(kv4, mpinfo[bd4, :], mdisp[bd4],\
+                #    mdispgd[bd4], numpy.pi / 2 / self._nps)
+                #self._mk4tab[idxit.multi_index] = idx4
+                idxit.iternext()
+            with multiprocessing.Pool(get_procs_num()) as pool:
+                self._mk4tab = pool.starmap(find_patch, data_list)
+            self._mk4tab = numpy.reshape(self._mk4tab, U.shape)
+        else:
+            data_list = []
+            idxit = numpy.nditer(U, flags=['multi_index'])
+            step = numpy.minimum(brlu.width, brlu.height) / 10 / self._nps
+            while not idxit.finished:
+                bd1, bd2, bd3, bd4, idx1, idx2, idx3 = idxit.multi_index
+                kv1, kv2, kv3 = mpinfo[bd1, idx1], mpinfo[bd2, idx2], mpinfo[bd3, idx3]
+                kv4 = ksft(ksft(kv1, kv2), Point(-kv3.coord[0], -kv3.coord[1], 1))
+                data_list.append(
+                    (kv4, mpinfo[bd4, :])
+                )
+                #idx4 = find_patch(kv4, mpinfo[bd4, :], mdisp[bd4],\
+                #    mdispgd[bd4], numpy.pi / 2 / self._nps)
+                #self._mk4tab[idxit.multi_index] = idx4
+                idxit.iternext()
+            with multiprocessing.Pool(get_procs_num()) as pool:
+                self._mk4tab = pool.starmap(find_patch_mode2, data_list)
+            self._mk4tab = numpy.reshape(self._mk4tab, U.shape)
         #for idx1 in range(self._patchnum):
         #    for idx2 in range(self._patchnum):
         #        for idx3 in range(self._patchnum):
@@ -167,12 +186,14 @@ class _Config():
         '''从n1,n2,n3确定n4'''
         return self._mk4tab
 
-def config_init(brlu, ltris, ladjs, mpinfo, mlpats, mdisp, mdispgd, ksft, lamb0):
+def config_init(brlu, ltris, ladjs, mpinfo, mlpats, mdisp, mdispgd,\
+    ksft, lamb0, find_mode=1):
     '''初始化配置'''
     global CONFIG
     if CONFIG is not None:
         raise RuntimeError('已经初始化过了')
-    CONFIG = _Config(brlu, ltris, ladjs, mpinfo, mlpats, mdisp, mdispgd, ksft, lamb0)
+    CONFIG = _Config(brlu, ltris, ladjs, mpinfo,\
+        mlpats, mdisp, mdispgd, ksft, lamb0, find_mode=find_mode)
 
 
 QUICKCONTOUR = None

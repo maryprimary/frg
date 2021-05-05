@@ -1,5 +1,6 @@
 """三角形有关的功能"""
 
+import numpy
 from typing import List
 from .point import Point, middle_point
 from .line import Segment
@@ -68,3 +69,20 @@ class Rtriangle(Triangle):
     def center(self):
         '''中心点'''
         return self._center
+
+
+class Eqtriangle(Triangle):
+    """正三角形\n
+    创建一个正三角形和普通三角形一样需要三个点
+    """
+    def __init__(self, pts: List[Point]):
+        super().__init__(pts)
+        lengs = [edg.length for edg in self._edges]
+        assert numpy.allclose(lengs, sum(lengs) / 3.)
+        self._edge_length = lengs[0]
+
+
+    @property
+    def edge_length(self):
+        '''边长'''
+        return self._edge_length
