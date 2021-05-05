@@ -21,7 +21,7 @@ def brillouin():
 def dispersion(kxv, kyv):
     '''色散关系'''
     kyp = numpy.sqrt(3) * kyv / 2.0
-    return -2*numpy.cos(kxv) - 4*numpy.cos(kyp)*numpy.cos(kxv/2)
+    return -2*numpy.cos(kxv) - 4*numpy.cos(kyp)*numpy.cos(kxv/2) - 0.85
 
 
 def get_patches(npat):
@@ -59,3 +59,28 @@ def shift_kv(kpt: Point, sft: Point):
         dis2cents = [numpy.square(dest[0]-cnt[0]) + numpy.square(dest[1]-cnt[1])\
             for cnt in brlu_cents]
     return Point(dest[0], dest[1], 1)
+
+
+def get_exchange_gamma(jval, pinfos):
+    '''获取交换相互作用的有效大小'''
+    pnum = len(pinfos)
+    result = numpy.zeros((pnum, pnum, pnum))
+    nditer = numpy.nditer(result, flags=['multi_index'])
+    co1 = 0.5
+    co2 = numpy.sqrt(3) * 0.5
+    while not nditer.finished:
+        kidx1, kidx2, kidx3 = nditer.multi_index
+        kv1, kv2, kv3 = pinfos[kidx1], pinfos[kidx2], pinfos[kidx3]
+        #q1v = k_2 - k_4 = k_3 - k_1
+        q1v = shift_kv(kv3, Point(-kv1.coord[0], -kv1.coord[1], 1))
+        #q2v = k_1 - k_4 = k_3 - k_2
+        q2v = shift_kv(kv3, Point(-kv2.coord[0], -kv2.coord[1], 1))
+        phase = numpy.cos(-co1*q1v.coord[0] + co2*q1v.coord[1])
+        phase += numpy.cos(co1*q1v.coord[0] + co2*q1v.coord[1])
+        phase += numpy.cos(q1v.coord[0])
+        phase += 0.5*numpy.cos(-co1*q2v.coord[0] + co2*q2v.coord[1])
+        phase += 0.5*numpy.cos(co1*q2v.coord[0] + co2*q2v.coord[1])
+        phase += 0.5*numpy.cos(q2v.coord[0])
+        result[kidx1, kidx2, kidx3] = -jval * phase
+        nditer.iternext()
+    return result
