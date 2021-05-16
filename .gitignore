@@ -8,11 +8,20 @@ scripts/*
 !scripts/square_brillouin.py
 !scripts/square_solution.py
 !scripts/square_solution_multi.py
+!scripts/triangle
 heatmap*/
 scripts/stripe/*
 !scripts/stripe/brillouin.py
 !scripts/stripe/solution.py
 !scripts/stripe/visualize.py
+!scripts/rectbrlu
+scripts/rectbrlu/*
+!scripts/rectbrlu/brillouin.py
+!scripts/rectbrlu/solution.py
+scripts/triangle/*
+!scripts/triangle/brillouin.py
+!scripts/triangle/solution.py
+!scripts/triangle/visualize.py
 
 
 #性能分析
@@ -28,3 +37,4 @@ profile/*
 
 #杂项
 comment/
+backends/

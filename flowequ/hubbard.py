@@ -5,7 +5,7 @@
 
 import multiprocessing
 import numpy
-from basics import Point
+from basics import Point, get_procs_num
 from fermi.patches import find_patch
 from fermi.surface import const_energy_line_in_patches
 from fermi.bubble import pi_plus_ec, pi_minus_ec
@@ -46,7 +46,7 @@ class _Config():
     这里面l开头的三个都是和剖分的小三角有关的
     """
     def __init__(self, brlu, ltris, ladjs, pinfo, lpats, disp, dispgd,\
-        ksft, lamb0):
+        ksft, lamb0, find_mode=1):
         self._brlu = brlu
         self._ltris = ltris
         self._nps = numpy.sqrt(len(ltris)) / 2
@@ -61,7 +61,7 @@ class _Config():
         #找到每个对应的n4
         self._k4tab = numpy.ndarray(
             (self._patchnum, self._patchnum, self._patchnum),
-            dtype=numpy.int
+            dtype=int
         )
         step = numpy.minimum(brlu.width, brlu.height) / 10 / self._nps
         for idx1 in range(self._patchnum):
@@ -77,7 +77,7 @@ class _Config():
                     #    for tri in self._ltris]
                     #idx4_ = numpy.argmin(dislist)
                     #idx4_ = self._lpats[idx4_]
-                    idx4 = find_patch(kv4, pinfo, disp, dispgd, step)
+                    idx4 = find_patch(kv4, pinfo, disp, dispgd, step, mode=find_mode)
                     #assert idx4_ == idx4
                     self._k4tab[idx1, idx2, idx3] = idx4
         #初始化
@@ -205,8 +205,8 @@ def precompute_qpp(lval):
         q_pp = ksft(kv1, kv2)
         data_list.append((lnposi[nidx], lnnega[nidx], lamb, q_pp, disp, ksft, area))
         nditer.iternext()
-    pool = multiprocessing.Pool(4)
-    result = pool.starmap(pi_minus_ec, data_list)
+    with multiprocessing.Pool(get_procs_num()) as pool:
+        result = pool.starmap(pi_minus_ec, data_list)
     #pi_minus_ec(nposi, nnega, lamb, q_pp, disp, ksft)
     QUICKQPP[lval] = numpy.reshape(result, place_holder.shape)
 
@@ -250,8 +250,8 @@ def precompute_qfs(lval):
         q_fs = ksft(kv3, Point(-kv2.coord[0], -kv2.coord[1], 1))
         data_list.append((lnposi[nidx], lnnega[nidx], lamb, q_fs, disp, ksft, area))
         nditer.iternext()
-    pool = multiprocessing.Pool(4)
-    result = pool.starmap(pi_plus_ec, data_list)
+    with multiprocessing.Pool(get_procs_num()) as pool:
+        result = pool.starmap(pi_plus_ec, data_list)
     #pi_plus_ec(nposi, nnega, lamb, q_fs, disp, ksft)
     QUICKQFS[lval] = numpy.reshape(result, place_holder.shape)
 
@@ -296,8 +296,8 @@ def precompute_nqfs(lval):
         nq_fs = Point(-q_fs.coord[0], -q_fs.coord[1], 1)
         data_list.append((lnposi[nidx], lnnega[nidx], lamb, nq_fs, disp, ksft, area))
         nditer.iternext()
-    pool = multiprocessing.Pool(4)
-    result = pool.starmap(pi_plus_ec, data_list)
+    with multiprocessing.Pool(get_procs_num()) as pool:
+        result = pool.starmap(pi_plus_ec, data_list)
     #pi_plus_ec(nposi, nnega, lamb, nq_fs, disp, ksft)
     QUICKNQFS[lval] = numpy.reshape(result, place_holder.shape)
 
@@ -341,8 +341,8 @@ def precompute_qex(lval):
         q_ex = ksft(kv1, Point(-kv3.coord[0], -kv3.coord[1], 1))
         data_list.append((lnposi[nidx], lnnega[nidx], lamb, q_ex, disp, ksft, area))
         nditer.iternext()
-    pool = multiprocessing.Pool(4)
-    result = pool.starmap(pi_plus_ec, data_list)
+    with multiprocessing.Pool(get_procs_num()) as pool:
+        result = pool.starmap(pi_plus_ec, data_list)
     #pi_plus_ec(nposi, nnega, lamb, q_ex, disp, ksft)
     QUICKQEX[lval] = numpy.reshape(result, place_holder.shape)
 
@@ -387,8 +387,8 @@ def precompute_nqex(lval):
         nq_ex = Point(-q_ex.coord[0], -q_ex.coord[1], 1)
         data_list.append((lnposi[nidx], lnnega[nidx], lamb, nq_ex, disp, ksft, area))
         nditer.iternext()
-    pool = multiprocessing.Pool(4)
-    result = pool.starmap(pi_plus_ec, data_list)
+    with multiprocessing.Pool(get_procs_num()) as pool:
+        result = pool.starmap(pi_plus_ec, data_list)
     #pi_plus_ec(nposi, nnega, lamb, q_ex, disp, ksft)
     QUICKNQEX[lval] = numpy.reshape(result, place_holder.shape)
 
