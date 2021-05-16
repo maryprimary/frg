@@ -35,7 +35,7 @@ def get_patches(npat):
             lambda rad: dispersion(rad*numpy.cos(ang), rad*numpy.sin(ang)),
             0, 2*numpy.pi/numpy.sqrt(3)
         )
-        pats.append(Point(rrad*numpy.cos(ang), rrad*numpy.sin(ang),1))
+        pats.append(Point(rrad*numpy.cos(ang), rrad*numpy.sin(ang), 1))
     return pats
 
 
