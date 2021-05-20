@@ -26,6 +26,7 @@ def dispersion(kxv, kyv):
 
 def get_patches(npat):
     '''获得三角格子的patches，最简单的版本，按角度切分'''
+    #pylint: disable=cell-var-from-loop
     deltaa = 2*numpy.pi / npat
     angs = [(idx+0.5) * deltaa for idx in range(npat)]
     #print(angs)

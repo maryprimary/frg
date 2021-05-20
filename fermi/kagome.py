@@ -1,0 +1,162 @@
+r"""Kagome格子相关的内容
+``````
+Kagome是三角晶系，定义和triangle.py中类似
+初基矢量的选择
+a1 = (-1/2, \sqrt{3}/2)
+a2 = (1/2, \sqrt{3}/2)
+倒格子的选择
+b1 = (-2\pi, 2\pi/\sqrt{3})  #(-1, 1/\sqrt{3})
+b2 = ( 2\pi, 2\pi/\sqrt{3})  #(1, 1/\sqrt{3})
+
+特别需要注意的是，两个M点的连线中点绝对不能当作patch，因为数值精度原因，这里的
+nu值偏差很厉害，所以在得到一个patch以后，应该计算一下这个patch旁边的nu值对比一下
+"""
+
+
+import numpy
+from scipy import optimize
+from basics import Hexagon, Point
+
+
+def brillouin():
+    '''布里渊区'''
+    return Hexagon(Point(0, 0, 1), 2*numpy.pi/numpy.sqrt(3))
+
+
+def get_high_symmetry_point():
+    '''获得三角晶格的高对称点'''
+    gamma = Point(0, 0, 1)
+    mpt = Point(0, 2*numpy.pi / (numpy.sqrt(3)), 1)
+    kpt = Point(-2*numpy.pi / 3, 2*numpy.pi / (numpy.sqrt(3)), 1)
+    return gamma, mpt, kpt
+
+
+def s_disp(kxv, kyv):#pylint: disable=unused-argument
+    '''s能带的色散关系'''
+    return 2
+
+
+def p_disp(kxv, kyv):
+    '''p能带的色散关系'''
+    xval = kxv / 4
+    yval = numpy.sqrt(3) * kyv / 4
+    sqr = 2 * numpy.cos(2*xval - 2*yval)
+    sqr += 2 * numpy.cos(2*xval + 2*yval)
+    sqr += 2 * numpy.cos(4*xval) + 3
+    if sqr < 0:
+        if numpy.isclose(sqr, 0):
+            sqr = 0
+        else:
+            raise RuntimeError("能带有错误")
+    return - 1 + numpy.sqrt(sqr)
+
+def d_disp(kxv, kyv):
+    '''d能带的色散关系'''
+    xval = kxv / 4
+    yval = numpy.sqrt(3) * kyv / 4
+    sqr = 2 * numpy.cos(2*xval - 2*yval)
+    sqr += 2 * numpy.cos(2*xval + 2*yval)
+    sqr += 2 * numpy.cos(4*xval) + 3
+    if sqr < 0:
+        if numpy.isclose(sqr, 0):
+            sqr = 0
+        else:
+            raise RuntimeError("能带有错误")
+    return - 1 - numpy.sqrt(sqr)
+
+
+def get_nu(kxv, kyv):
+    '''获取nu变换的矩阵'''
+    #pylint: disable=invalid-name
+    nu1 = numpy.zeros(3)
+    nu2 = numpy.zeros(3)
+    nu3 = numpy.zeros(3)
+    x = kxv / numpy.square(2, dtype=numpy.float128)
+    y = numpy.sqrt(3, dtype=numpy.float128) * kyv / 4
+    #p和d需要的根号下的数值
+    sqr = 2 * numpy.cos(2*x - 2*y)
+    sqr += 2 * numpy.cos(2*x + 2*y)
+    sqr += 2 * numpy.cos(4*x) + 3
+    if sqr < 0:
+        if numpy.isclose(sqr, 0):
+            sqr = 0
+        else:
+            raise RuntimeError("能带有错误")
+    #第一组本征态
+    nu1[0] = -numpy.cos(2*x)/2 + numpy.cos(2*y)/2
+    nu1[1] = -numpy.cos(x-y)/2 + numpy.cos(3*x+y)/2
+    nu1[2] = 1 - numpy.square(numpy.cos(x+y))
+    #归一化
+    n1 = numpy.square(nu1[0]) + numpy.square(nu1[1]) + numpy.square(nu1[2])
+    n1 = 1.0 / numpy.sqrt(n1)
+    nu1 = n1 * nu1
+    #第二组本征态
+    lamb2 = 1 - numpy.sqrt(sqr)
+    nu2[0] = numpy.square(lamb2)/2 - 2*numpy.square(numpy.cos(x-y))
+    nu2[1] = 2*numpy.cos(2*x)*numpy.cos(x-y) + numpy.cos(x+y)*lamb2
+    nu2[2] = numpy.cos(2*x)*lamb2 + 2*numpy.cos(x-y)*numpy.cos(x+y)
+    #归一化
+    n2 = numpy.square(nu2[0]) + numpy.square(nu2[1]) + numpy.square(nu2[2])
+    n2 = 1.0 / numpy.sqrt(n2)
+    nu2 = n2 * nu2
+    #第三组本征态
+    lamb3 = 1 + numpy.sqrt(sqr)
+    nu3[0] = numpy.square(lamb3)/2 - 2*numpy.square(numpy.cos(x-y))
+    nu3[1] = 2*numpy.cos(2*x)*numpy.cos(x-y) + numpy.cos(x+y)*lamb3
+    nu3[2] = numpy.cos(2*x)*lamb3 + 2*numpy.cos(x-y)*numpy.cos(x+y)
+    #归一化
+    n3 = numpy.square(nu3[0]) + numpy.square(nu3[1]) + numpy.square(nu3[2])
+    n3 = 1.0 / numpy.sqrt(n3)
+    nu3 = n3 * nu3
+    return nu1, nu2, nu3
+
+
+def shift_kv(kpt: Point, sft: Point):
+    '''将一个动量平移'''
+    dest = [kpt.coord[idx] + sft.coord[idx] for idx in range(2)]
+    #找到离目标最近的一个第一布里渊区的中心
+    #如果这个点距离中心是最近的，那么他就在第一布里渊区里面了，如果
+    #离其他的点近，就平移一次，再检查一遍
+    b1x = -6.283185307179586#-2*numpy.pi
+    b1y = 3.6275987284684357#2*numpy.pi/numpy.sqrt(3)
+    brlu_cents = [(0, 0), (b1x, b1y), (0, 2*b1y), (-b1x, b1y),\
+        (-b1x, -b1y), (0, -2*b1y), (b1x, -b1y)]
+    #计算距离
+    dis2cents = [numpy.square(dest[0]-cnt[0]) + numpy.square(dest[1]-cnt[1])\
+        for cnt in brlu_cents]
+    while numpy.argmin(dis2cents) != 0:
+        ncnt = numpy.argmin(dis2cents)
+        dest[0] = dest[0] - brlu_cents[ncnt][0]
+        dest[1] = dest[1] - brlu_cents[ncnt][1]
+        dis2cents = [numpy.square(dest[0]-cnt[0]) + numpy.square(dest[1]-cnt[1])\
+            for cnt in brlu_cents]
+    return Point(dest[0], dest[1], 1)
+
+
+def get_p_patches(npat):
+    '''获得p能带费米面的patches'''
+    #pylint: disable=cell-var-from-loop
+    deltaa = 2*numpy.pi / npat
+    angs = [(idx+0.5) * deltaa for idx in range(npat)]
+    #print(angs)
+    pats = []
+    for ang in angs:
+        rrad = optimize.bisect(
+            lambda rad: p_disp(rad*numpy.cos(ang), rad*numpy.sin(ang)),
+            0, 2*numpy.pi/numpy.sqrt(3)
+        )
+        pats.append(Point(rrad*numpy.cos(ang), rrad*numpy.sin(ang), 1))
+    return pats
+
+
+def check_patches_converge(pat):
+    '''
+    检测这个点的nu值是不是合理的数值
+    '''
+
+
+def get_patches(nang, nrad):
+    '''PHYSICAL REVIEW B92, 155137 (2015)
+    这里面的patches取法，从K点为中心
+    '''
+    raise NotImplementedError()
