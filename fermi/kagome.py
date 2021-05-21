@@ -8,14 +8,16 @@ a2 = (1/2, \sqrt{3}/2)
 b1 = (-2\pi, 2\pi/\sqrt{3})  #(-1, 1/\sqrt{3})
 b2 = ( 2\pi, 2\pi/\sqrt{3})  #(1, 1/\sqrt{3})
 
-特别需要注意的是，两个M点的连线中点绝对不能当作patch，因为数值精度原因，这里的
-nu值偏差很厉害，所以在得到一个patch以后，应该计算一下这个patch旁边的nu值对比一下
+特别需要注意的是数值精度，使用sympy运算的时候精度更高一些
+或者使用更高精度的float128
 """
 
 
 import numpy
+import sympy
 from scipy import optimize
 from basics import Hexagon, Point
+from basics.point import get_absolute_angle, middle_point
 
 
 def brillouin():
@@ -65,7 +67,7 @@ def d_disp(kxv, kyv):
     return - 1 - numpy.sqrt(sqr)
 
 
-def get_nu(kxv, kyv):
+def get_nu_numpy(kxv, kyv):
     '''获取nu变换的矩阵'''
     #pylint: disable=invalid-name
     nu1 = numpy.zeros(3)
@@ -111,6 +113,57 @@ def get_nu(kxv, kyv):
     return nu1, nu2, nu3
 
 
+def get_nu(kxv, kyv):
+    '''获取nu变换的矩阵'''
+    #pylint: disable=invalid-name
+    nu1 = sympy.zeros(3, 1)
+    nu2 = sympy.zeros(3, 1)
+    nu3 = sympy.zeros(3, 1)
+    #x = kxv / numpy.square(2, dtype=numpy.float128)
+    #y = numpy.sqrt(3, dtype=numpy.float128) * kyv / 4
+    x, y = sympy.symbols("x y")
+    #x = x2 / 4.0
+    #y = sympy.sqrt(3) * y2 / 4.0
+    #p和d需要的根号下的数值
+    sqr = 2 * sympy.cos(2*x - 2*y)
+    sqr += 2 * sympy.cos(2*x + 2*y)
+    sqr += 2 * sympy.cos(4*x) + 3
+    #第一组本征态
+    nu1[0] = -sympy.cos(2*x)/2 + sympy.cos(2*y)/2
+    nu1[1] = -sympy.cos(x-y)/2 + sympy.cos(3*x+y)/2
+    nu1[2] = 1 - sympy.Pow(sympy.cos(x+y), 2)
+    #归一化
+    n1 = sympy.Pow(nu1[0], 2) + sympy.Pow(nu1[1], 2) + sympy.Pow(nu1[2], 2)
+    n1 = 1.0 / sympy.sqrt(n1)
+    nu1 = n1 * nu1
+    #第二组本征态
+    lamb2 = 1 - sympy.sqrt(sqr)
+    nu2[0] = sympy.Pow(lamb2, 2)/2 - 2*sympy.Pow(sympy.cos(x-y), 2)
+    nu2[1] = 2*sympy.cos(2*x)*sympy.cos(x-y) + sympy.cos(x+y)*lamb2
+    nu2[2] = sympy.cos(2*x)*lamb2 + 2*sympy.cos(x-y)*sympy.cos(x+y)
+    #归一化
+    n2 = sympy.Pow(nu2[0], 2) + sympy.Pow(nu2[1], 2) + sympy.Pow(nu2[2], 2)
+    n2 = 1.0 / sympy.sqrt(n2)
+    nu2 = n2 * nu2
+    #第三组本征态
+    lamb3 = 1 + sympy.sqrt(sqr)
+    nu3[0] = sympy.Pow(lamb3, 2)/2 - 2*sympy.Pow(sympy.cos(x-y), 2)
+    nu3[1] = 2*sympy.cos(2*x)*sympy.cos(x-y) + sympy.cos(x+y)*lamb3
+    nu3[2] = sympy.cos(2*x)*lamb3 + 2*sympy.cos(x-y)*sympy.cos(x+y)
+    #归一化
+    n3 = sympy.Pow(nu3[0], 2) + sympy.Pow(nu3[1], 2) + sympy.Pow(nu3[2], 2)
+    n3 = 1.0 / sympy.sqrt(n3)
+    nu3 = n3 * nu3
+    #整理成numpy的结果
+    nnu1 = nu1.evalf(30, subs={x: kxv/4, y: numpy.sqrt(3)*kyv/4})
+    nnu2 = nu2.evalf(30, subs={x: kxv/4, y: numpy.sqrt(3)*kyv/4})
+    nnu3 = nu3.evalf(30, subs={x: kxv/4, y: numpy.sqrt(3)*kyv/4})
+    nnu1 = numpy.array(nnu1, dtype=numpy.float64).reshape([3])
+    nnu2 = numpy.array(nnu2, dtype=numpy.float64).reshape([3])
+    nnu3 = numpy.array(nnu3, dtype=numpy.float64).reshape([3])
+    return nnu1, nnu2, nnu3
+
+
 def shift_kv(kpt: Point, sft: Point):
     '''将一个动量平移'''
     dest = [kpt.coord[idx] + sft.coord[idx] for idx in range(2)]
@@ -133,11 +186,24 @@ def shift_kv(kpt: Point, sft: Point):
     return Point(dest[0], dest[1], 1)
 
 
-def get_p_patches(npat):
-    '''获得p能带费米面的patches'''
+def get_von_hove_patches(pat_per_k):
+    '''获取平分von Hove的patches'''
     #pylint: disable=cell-var-from-loop
-    deltaa = 2*numpy.pi / npat
-    angs = [(idx+0.5) * deltaa for idx in range(npat)]
+    #一共有6个M点
+    mpts = [
+        Point(3.1415926, 3.1415926 / 1.7320508, 1),
+        Point(0, 2*3.1415926 / 1.7320508, 1),
+        Point(-3.1415926, 3.1415926 / 1.7320508, 1),
+        Point(-3.1415926, -3.1415926 / 1.7320508, 1),
+        Point(0, -2*3.1415926 / 1.7320508, 1),
+        Point(3.1415926, -3.1415926 / 1.7320508, 1)
+    ]
+    angs = []
+    gap = 1 / pat_per_k
+    for idx in range(6):
+        omega = (idx + 0.5) * gap
+        vpt = middle_point(mpts[idx], mpts[idx + 1], sc1=1-omega, sc2=omega)
+        angs.append(get_absolute_angle(vpt.coord[0], vpt.coord[1]))
     #print(angs)
     pats = []
     for ang in angs:
@@ -153,6 +219,12 @@ def check_patches_converge(pat):
     '''
     检测这个点的nu值是不是合理的数值
     '''
+    nu11, nu12, nu13 = get_nu(pat.coord[0], pat.coord[1])
+    nu21, nu22, nu23 = get_nu(pat.coord[0]+0.01, pat.coord[1]+0.01)
+    nu1 = numpy.abs(numpy.stack([nu11, nu12, nu13]))
+    nu2 = numpy.abs(numpy.stack([nu21, nu22, nu23]))
+    return numpy.allclose(nu1, nu2, rtol=0., atol=0.1)
+
 
 
 def get_patches(nang, nrad):

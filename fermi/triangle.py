@@ -11,6 +11,7 @@ b2 = ( 2\pi, 2\pi/\sqrt{3})  #(1, 1/\sqrt{3})
 import numpy
 from scipy import optimize
 from basics import Hexagon, Point
+from basics.point import get_absolute_angle, middle_point
 
 
 def brillouin():
@@ -21,7 +22,7 @@ def brillouin():
 def dispersion(kxv, kyv):
     '''色散关系'''
     kyp = numpy.sqrt(3) * kyv / 2.0
-    return -2*numpy.cos(kxv) - 4*numpy.cos(kyp)*numpy.cos(kxv/2) - 0.85
+    return -2*numpy.cos(kxv) - 4*numpy.cos(kyp)*numpy.cos(kxv/2) - 2
 
 
 def get_patches(npat):
@@ -30,6 +31,37 @@ def get_patches(npat):
     deltaa = 2*numpy.pi / npat
     angs = [(idx+0.5) * deltaa for idx in range(npat)]
     #print(angs)
+    pats = []
+    for ang in angs:
+        rrad = optimize.bisect(
+            lambda rad: dispersion(rad*numpy.cos(ang), rad*numpy.sin(ang)),
+            0, 2*numpy.pi/numpy.sqrt(3)
+        )
+        pats.append(Point(rrad*numpy.cos(ang), rrad*numpy.sin(ang), 1))
+    return pats
+
+
+def get_von_hove_patches(npat):
+    '''获取平分von Hove的patches'''
+    #pylint: disable=cell-var-from-loop
+    #一共有6个M点
+    mpts = [
+        Point(3.1415926, 3.1415926 / 1.7320508, 1),
+        Point(0, 2*3.1415926 / 1.7320508, 1),
+        Point(-3.1415926, 3.1415926 / 1.7320508, 1),
+        Point(-3.1415926, -3.1415926 / 1.7320508, 1),
+        Point(0, -2*3.1415926 / 1.7320508, 1),
+        Point(3.1415926, -3.1415926 / 1.7320508, 1)
+    ]
+    angs = []
+    pat_per_k = npat // 6
+    gap = 1 / pat_per_k
+    for idx in range(6):
+        ridx = idx + 1 if idx + 1 < 6 else 0
+        for pidx in range(pat_per_k):
+            omega = (pidx + 0.5) * gap
+            vpt = middle_point(mpts[idx], mpts[ridx], sc1=1-omega, sc2=omega)
+            angs.append(get_absolute_angle(vpt.coord[0], vpt.coord[1]))
     pats = []
     for ang in angs:
         rrad = optimize.bisect(
