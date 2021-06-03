@@ -186,7 +186,7 @@ def shift_kv(kpt: Point, sft: Point):
     return Point(dest[0], dest[1], 1)
 
 
-def get_von_hove_patches(pat_per_k):
+def get_von_hove_patches(npat):
     '''获取平分von Hove的patches'''
     #pylint: disable=cell-var-from-loop
     #一共有6个M点
@@ -199,12 +199,14 @@ def get_von_hove_patches(pat_per_k):
         Point(3.1415926, -3.1415926 / 1.7320508, 1)
     ]
     angs = []
+    pat_per_k = npat // 6
     gap = 1 / pat_per_k
     for idx in range(6):
-        omega = (idx + 0.5) * gap
-        vpt = middle_point(mpts[idx], mpts[idx + 1], sc1=1-omega, sc2=omega)
-        angs.append(get_absolute_angle(vpt.coord[0], vpt.coord[1]))
-    #print(angs)
+        ridx = idx + 1 if idx + 1 < 6 else 0
+        for pidx in range(pat_per_k):
+            omega = (pidx + 0.5) * gap
+            vpt = middle_point(mpts[idx], mpts[ridx], sc1=1-omega, sc2=omega)
+            angs.append(get_absolute_angle(vpt.coord[0], vpt.coord[1]))
     pats = []
     for ang in angs:
         rrad = optimize.bisect(

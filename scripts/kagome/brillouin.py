@@ -3,7 +3,7 @@
 import argparse
 #绘制示意图
 #
-from fermi.kagome import brillouin, p_disp, get_p_patches
+from fermi.kagome import brillouin, p_disp, get_von_hove_patches
 from fermi.patches import find_patch
 from fermi.surface import const_energy_line, const_energy_line_in_patches
 from helpers.drawer import draw_components
@@ -17,7 +17,7 @@ def precompute(args):
     #需要用到的所有东西
     brlu = brillouin()
     ltris, ladjs = hexagon_split(brlu, args.mesh)
-    pinfos = get_p_patches(args.patches)
+    pinfos = get_von_hove_patches(args.patches)
     lpats = [find_patch(tri.center, pinfos, None, None, None, mode=2) for tri in ltris]
     #画一下费米面
     edges = const_energy_line(ltris, ladjs, 0.0, p_disp)

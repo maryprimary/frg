@@ -8,11 +8,11 @@ fRG算法演示
 运行代码需要`python3(>3.6)`[1] ，`numpy`，`scipy`， `matplotlib`  
 首先要生成描述第一布里渊区的文件
 ```bash
-python3 scripts/square_brillouin.py -p 16
+python3 scripts/square/square_brillouin.py -p 16
 ```
 在此基础上，进行计算
 ```bash
-python3 scripts/square_solution_multi.py -p 16
+python3 scripts/square/square_solution_multi.py -p 16
 ```
 
 ## 设置运行时的参数
