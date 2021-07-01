@@ -50,7 +50,7 @@ def p_disp(kxv, kyv):
             sqr = 0
         else:
             raise RuntimeError("能带有错误")
-    return - 1 + numpy.sqrt(sqr)
+    return - 1 + numpy.sqrt(sqr) - 0.11
 
 def d_disp(kxv, kyv):
     '''d能带的色散关系'''
@@ -162,6 +162,96 @@ def get_nu(kxv, kyv):
     nnu2 = numpy.array(nnu2, dtype=numpy.float64).reshape([3])
     nnu3 = numpy.array(nnu3, dtype=numpy.float64).reshape([3])
     return nnu1, nnu2, nnu3
+
+
+def band_u(uval, pinfos):
+    '''带内的相互作用'''
+    npat = len(pinfos)
+    ret = numpy.zeros((npat, npat, npat))
+    ndit = numpy.nditer(ret, flags=['multi_index'])
+    while not ndit.finished:
+        k1idx, k2idx, k3idx = ndit.multi_index
+        #p2这个带
+        k1v = pinfos[k1idx]
+        k2v = pinfos[k2idx]
+        k3v = pinfos[k3idx]
+        k4v = shift_kv(k1v, k2v)
+        k4v = shift_kv(k4v, Point(-k3v.coord[0], -k3v.coord[1], 1))
+        #p这个带只需要第二个
+        _, k1nu, _ = get_nu_numpy(k1v.coord[0], k1v.coord[1])
+        _, k2nu, _ = get_nu_numpy(k2v.coord[0], k2v.coord[1])
+        _, k3nu, _ = get_nu_numpy(k3v.coord[0], k3v.coord[1])
+        _, k4nu, _ = get_nu_numpy(k4v.coord[0], k4v.coord[1])
+        #计算数值
+        for idx in range(3):
+            ret[k1idx, k2idx, k3idx] +=\
+                uval * k1nu[idx] * k2nu[idx] * k3nu[idx] * k4nu[idx]
+        ndit.iternext()
+    return ret
+
+
+def band_v(vval, pinfos):
+    '''带内的相互作用'''
+    npat = len(pinfos)
+    ret = numpy.zeros((npat, npat, npat))
+    ndit = numpy.nditer(ret, flags=['multi_index'])
+    while not ndit.finished:
+        k1idx, k2idx, k3idx = ndit.multi_index
+        #p2这个带
+        k1v = pinfos[k1idx]
+        k2v = pinfos[k2idx]
+        k3v = pinfos[k3idx]
+        k4v = shift_kv(k1v, k2v)
+        k4v = shift_kv(k4v, Point(-k3v.coord[0], -k3v.coord[1], 1))
+        #公式中的K
+        ckv = shift_kv(k3v, Point(-k2v.coord[0], -k2v.coord[1], 1))
+        #p这个带只需要第二个
+        _, k1nu, _ = get_nu_numpy(k1v.coord[0], k1v.coord[1])
+        _, k2nu, _ = get_nu_numpy(k2v.coord[0], k2v.coord[1])
+        _, k3nu, _ = get_nu_numpy(k3v.coord[0], k3v.coord[1])
+        _, k4nu, _ = get_nu_numpy(k4v.coord[0], k4v.coord[1])
+        #计算数值
+        s3_4 = 0.25*numpy.sqrt(3)
+        vab = k1nu[0]*k2nu[1]*k3nu[1]*k4nu[0] + k1nu[1]*k2nu[0]*k3nu[0]*k4nu[1]
+        ret[k1idx, k2idx, k3idx] += 2 * vval * \
+            numpy.cos(0.25*ckv.coord[0] + s3_4*ckv.coord[1]) * vab
+        vac = k1nu[0]*k2nu[2]*k3nu[2]*k4nu[0] + k1nu[2]*k2nu[0]*k3nu[0]*k4nu[2]
+        ret[k1idx, k2idx, k3idx] += 2 * vval * \
+            numpy.cos(0.5*ckv.coord[0]) * vac
+        vbc = k1nu[1]*k2nu[2]*k3nu[2]*k4nu[1] + k1nu[2]*k2nu[1]*k3nu[1]*k4nu[2]
+        ret[k1idx, k2idx, k3idx] += 2 * vval * \
+            numpy.cos(-0.25*ckv.coord[0] + s3_4*ckv.coord[1]) * vbc
+        ndit.iternext()
+    return ret
+
+
+def get_sublattice_u(umat, pinfos):
+    '''将能带表示变回到子格子表示'''
+    npat = len(pinfos)
+    ret = numpy.zeros((3, 3, 3, 3, npat, npat, npat))
+    place_holder = numpy.zeros((npat, npat, npat))
+    ndit = numpy.nditer(place_holder, flags=['multi_index'])
+    while not ndit.finished:
+        k1idx, k2idx, k3idx = ndit.multi_index
+        #p2这个带
+        k1v = pinfos[k1idx]
+        k2v = pinfos[k2idx]
+        k3v = pinfos[k3idx]
+        k4v = shift_kv(k1v, k2v)
+        k4v = shift_kv(k4v, Point(-k3v.coord[0], -k3v.coord[1], 1))
+        _, k1nu, _ = get_nu_numpy(k1v.coord[0], k1v.coord[1])
+        _, k2nu, _ = get_nu_numpy(k2v.coord[0], k2v.coord[1])
+        _, k3nu, _ = get_nu_numpy(k3v.coord[0], k3v.coord[1])
+        _, k4nu, _ = get_nu_numpy(k4v.coord[0], k4v.coord[1])
+        place_holder2 = numpy.zeros((3, 3, 3, 3))
+        ndit2 = numpy.nditer(place_holder2, flags=['multi_index'])
+        while not ndit2.finished:
+            si1, si2, si3, si4 = ndit2.multi_index
+            ret[si1, si2, si3, si4, k1idx, k2idx, k3idx] =\
+                umat[k1idx, k2idx, k3idx] * k1nu[si1] * k2nu[si2] * k3nu[si3] * k4nu[si4]
+            ndit2.iternext()
+        ndit.iternext()
+    return ret
 
 
 def shift_kv(kpt: Point, sft: Point):

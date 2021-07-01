@@ -18,12 +18,12 @@ def precompute(args):
     brlu = brillouin()
     ltris, ladjs = hexagon_split(brlu, args.mesh)
     pinfos = get_von_hove_patches(args.patches)
-    lpats = [find_patch(tri.center, pinfos, None, None, None, mode=2) for tri in ltris]
+    lpats = [find_patch(tri.center, pinfos, None, None, None, mode=3) for tri in ltris]
     #画一下费米面
     edges = const_energy_line(ltris, ladjs, 0.0, p_disp)
     dedgs = brlu.edges + edges
     draw_components(pinfos, dedgs, ltris, sgcc=[1]*len(dedgs), rtcc=lpats, save=\
-        '{0}_sur.svg'.format(args.prefix))
+        '{0}_sur.svg'.format(args.prefix), add_text=True)
     #保存切分的信息
     tri_save_to(
         '{0}_tris.txt'.format(args.prefix),
@@ -45,7 +45,7 @@ def main():
         description='precompute patches'
     )
     parser.add_argument('-p', '--patches', type=int, required=True, help='patches number')
-    parser.add_argument('-m', '--mesh', type=int, default=50, help='triangles number')
+    parser.add_argument('-m', '--mesh', type=int, default=100, help='triangles number')
     parser.add_argument('--prefix', type=str,\
         default='scripts/kagome/kag', help='saved file prefix')
     args = parser.parse_args()
