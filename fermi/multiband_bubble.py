@@ -120,3 +120,109 @@ def pi_ab_minus_ec(posia, negaa, lamb, qval, dispb, ksft, area):
     #乘上系数
     result = lamb * (intposi + intnega) / area#numpy.square(numpy.pi*2)
     return result
+
+
+def pi_ab_plus_tf(ltris, tarea, lamb, dispa, dispb, qval, ksft, area):
+    '''温度流的+
+    这里的lamb就是T，ltris中的所有三角都应该要在同一个patch中,
+    tarea是每个小三角形的面积，dispa是和k相关的那个能带，dispb是k-q相关的
+    '''
+    nega_q = Point(-qval.coord[0], -qval.coord[1], 1)
+    result = 0.
+    for tri in ltris:
+        #这个小三角形的k值
+        kval = tri.center
+        #k-q
+        kprim = ksft(kval, nega_q)
+        #epsilon_k
+        eps_k = dispa(kval.coord[0], kval.coord[1])
+        #epsilon_{k-q}
+        eps_kp = dispb(kprim.coord[0], kprim.coord[1])
+        if numpy.abs(eps_k - eps_kp) < 1.e-10:
+            #如果特别小，可以利用
+            # lim (eps_k -> eps_kp) Pi^{+} =
+            # 1/T (e^{eps/T} (-eps/T*e^{eps/T} + eps/T + e^{eps/T} + 1)) / (e^{eps/T} + 1)^3
+            bval = eps_kp / lamb
+            expb = numpy.exp(bval)
+            num = expb * (-bval * expb + bval + expb + 1)
+            den = numpy.power((1+expb), 3)
+            d_val = num / den / lamb
+        else:
+            #exp^{epsilon_k / T}
+            exp_k_t = numpy.exp(eps_k / lamb)
+            #e^{epsilon_{k-q} / T}
+            exp_kp_t = numpy.exp(eps_kp / lamb)
+            num_left = eps_k / lamb * exp_k_t / numpy.square(1 + exp_k_t)
+            num_righ = eps_kp / lamb * exp_kp_t\
+                / numpy.square(1 + exp_kp_t)
+            d_val = (num_left - num_righ) / (eps_k - eps_kp)
+        result += d_val * tarea
+    result = result / area
+    return result
+
+
+def pi_ab_minus_tf(ltris, tarea, lamb, dispa, dispb, qval, ksft, area):
+    '''温度流的-
+    这里的lamb就是T，ltris中的所有三角都应该要在同一个patch中,
+    tarea是每个小三角形的面积，dispa是和k相关的那个能带，dispb是-k+q相关的
+    '''
+    result = 0.
+    for tri in ltris:
+        #这个小三角形的k值
+        kval = tri.center
+        nega_k = Point(-kval.coord[0], -kval.coord[1], 1)
+        #-k+q
+        kprim = ksft(nega_k, qval)
+        #epsilon_k
+        eps_k = dispa(kval.coord[0], kval.coord[1])
+        #-epsilon_{-k+q}
+        neps_kp = -dispb(kprim.coord[0], kprim.coord[1])
+        #这个时候，因为epsilon_{-k+q}前面已经有了负号，分母上还是负号
+        if numpy.abs(eps_k - neps_kp) < 1.e-10:
+            #如果两个数值比较接近, Pi^{-}和Pi^{+}的公式完全一样，就是第二个能量要加个负号
+            # lim (eps_k -> -eps_kp) Pi^{-} =
+            # 1/T (e^{eps/T} (-eps/T*e^{eps/T} + eps/T + e^{eps/T} + 1)) / (e^{eps/T} + 1)^3
+            bval = eps_k / lamb
+            expb = numpy.exp(bval)
+            num = expb * (-bval * expb + bval + expb + 1)
+            den = numpy.power((1+expb), 3)
+            d_val = num / den / lamb
+        else:
+            #e^{epsilon_k / T}
+            exp_k_t = numpy.exp(eps_k / lamb)
+            #e^{-epsilon_{-k+q} / T}
+            exp_nkp_t = numpy.exp(neps_kp / lamb)
+            #
+            num_left = eps_k / lamb * exp_k_t / numpy.square(1 + exp_k_t)
+            num_righ = neps_kp / lamb * exp_nkp_t\
+            / numpy.square(1 + exp_nkp_t)
+            #e^{epsilon_k / T}
+            exp_k_t = numpy.exp(eps_k / lamb)
+            d_val = (num_left - num_righ) / (eps_k - neps_kp)
+        result += d_val * tarea
+    result = result / area
+    return result
+
+
+def val_test(eps_k, neps_kp, lamb):
+    #如果两个数值比较接近, Pi^{-}和Pi^{+}的公式完全一样，就是第二个能量要加个负号
+    # lim (eps_k -> -eps_kp) Pi^{-} =
+    # 1/T (e^{eps/T} (-eps/T*e^{eps/T} + eps/T + e^{eps/T} + 1)) / (e^{eps/T} + 1)^3
+    bval = eps_k / lamb
+    expb = numpy.exp(bval)
+    num = expb * (-bval * expb + bval + expb + 1)
+    den = numpy.power((1+expb), 3)
+    d_val1 = num / den / lamb
+    #
+    #e^{epsilon_k / T}
+    exp_k_t = numpy.exp(eps_k / lamb)
+    #e^{-epsilon_{-k+q} / T}
+    exp_nkp_t = numpy.exp(neps_kp / lamb)
+    #
+    num_left = eps_k / lamb * exp_k_t / numpy.square(1 + exp_k_t)
+    num_righ = neps_kp / lamb * exp_nkp_t\
+    / numpy.square(1 + exp_nkp_t)
+    #e^{epsilon_k / T}
+    exp_k_t = numpy.exp(eps_k / lamb)
+    d_val2 = (num_left - num_righ) / (eps_k - neps_kp)
+    return d_val1, d_val2
