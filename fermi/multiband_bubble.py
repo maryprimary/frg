@@ -1,10 +1,14 @@
 """定义在10.112中的bubble integrals
 """
 
+import warnings
 import numpy
 from basics import Point
 from basics.point import middle_point
 #pylint: disable=pointless-string-statement
+
+
+#warnings.simplefilter('once', RuntimeWarning)
 
 
 def pi_ab_plus_ec(posia, negaa, lamb, qval, dispb, ksft, area):
@@ -143,18 +147,30 @@ def pi_ab_plus_tf(ltris, tarea, lamb, dispa, dispb, qval, ksft, area):
             # lim (eps_k -> eps_kp) Pi^{+} =
             # 1/T (e^{eps/T} (-eps/T*e^{eps/T} + eps/T + e^{eps/T} + 1)) / (e^{eps/T} + 1)^3
             bval = eps_kp / lamb
+            #如果本身就很大，分母会比较大导致接近0
+            if bval > 25:
+                warnings.warn("数值不稳定", RuntimeWarning)
+                return 0.
             expb = numpy.exp(bval)
             num = expb * (-bval * expb + bval + expb + 1)
             den = numpy.power((1+expb), 3)
             d_val = num / den / lamb
         else:
-            #exp^{epsilon_k / T}
-            exp_k_t = numpy.exp(eps_k / lamb)
-            #e^{epsilon_{k-q} / T}
-            exp_kp_t = numpy.exp(eps_kp / lamb)
-            num_left = eps_k / lamb * exp_k_t / numpy.square(1 + exp_k_t)
-            num_righ = eps_kp / lamb * exp_kp_t\
-                / numpy.square(1 + exp_kp_t)
+            if (eps_k / lamb) > 25:
+                warnings.warn("数值不稳定", RuntimeWarning)
+                num_left = 0.
+            else:
+                #exp^{epsilon_k / T}
+                exp_k_t = numpy.exp(eps_k / lamb)
+                num_left = eps_k / lamb * exp_k_t / numpy.square(1 + exp_k_t)
+            if (eps_kp / lamb) > 25:
+                warnings.warn("数值不稳定", RuntimeWarning)
+                num_righ = 0.
+            else:
+                #e^{epsilon_{k-q} / T}
+                exp_kp_t = numpy.exp(eps_kp / lamb)
+                num_righ = eps_kp / lamb * exp_kp_t\
+                    / numpy.square(1 + exp_kp_t)
             d_val = (num_left - num_righ) / (eps_k - eps_kp)
         result += d_val * tarea
     result = result / area
@@ -183,21 +199,29 @@ def pi_ab_minus_tf(ltris, tarea, lamb, dispa, dispb, qval, ksft, area):
             # lim (eps_k -> -eps_kp) Pi^{-} =
             # 1/T (e^{eps/T} (-eps/T*e^{eps/T} + eps/T + e^{eps/T} + 1)) / (e^{eps/T} + 1)^3
             bval = eps_k / lamb
+            if bval > 25:
+                warnings.warn("数值不稳定", RuntimeWarning)
+                return 0.
             expb = numpy.exp(bval)
             num = expb * (-bval * expb + bval + expb + 1)
             den = numpy.power((1+expb), 3)
             d_val = num / den / lamb
         else:
-            #e^{epsilon_k / T}
-            exp_k_t = numpy.exp(eps_k / lamb)
-            #e^{-epsilon_{-k+q} / T}
-            exp_nkp_t = numpy.exp(neps_kp / lamb)
-            #
-            num_left = eps_k / lamb * exp_k_t / numpy.square(1 + exp_k_t)
-            num_righ = neps_kp / lamb * exp_nkp_t\
-            / numpy.square(1 + exp_nkp_t)
-            #e^{epsilon_k / T}
-            exp_k_t = numpy.exp(eps_k / lamb)
+            if (eps_k / lamb) > 25:
+                warnings.warn("数值不稳定", RuntimeWarning)
+                num_left = 0.
+            else:
+                #e^{epsilon_k / T}
+                exp_k_t = numpy.exp(eps_k / lamb)
+                num_left = eps_k / lamb * exp_k_t / numpy.square(1 + exp_k_t)
+            if (neps_kp / lamb) > 25:
+                warnings.warn("数值不稳定", RuntimeWarning)
+                num_righ = 0.
+            else:
+                #e^{-epsilon_{-k+q} / T}
+                exp_nkp_t = numpy.exp(neps_kp / lamb)
+                num_righ = neps_kp / lamb * exp_nkp_t\
+                / numpy.square(1 + exp_nkp_t)
             d_val = (num_left - num_righ) / (eps_k - neps_kp)
         result += d_val * tarea
     result = result / area
