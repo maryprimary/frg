@@ -4,6 +4,7 @@
 import numpy
 from scipy import optimize
 from basics import Square, Point
+from basics.point import get_absolute_angle
 
 
 def get_patches(brlu: Square, npatch, dispfun):
@@ -48,6 +49,8 @@ def find_patch(
     '''
     if mode == 2:
         return find_patch_mode2(pnt, patches)
+    if mode == 3:
+        return find_patch_mode3(pnt, patches)
     #从这个点引出一条线，如果两端反号，则停止
     kxv, kyv = pnt.coord
     olddisp = dispfun(kxv, kyv)
@@ -159,3 +162,102 @@ def find_patch_old(pnt: Point, patches, dispfun, dispgdfun):
         numpy.square(crsy - pat.coord[1])\
         for pat in patches]
     return numpy.argmin(dis_to_patch)
+
+
+def find_patch_mode3(pnt: Point, patches):
+    '''在六角型的布里渊区中找到属于哪个patches
+    适合von Hove filling附近, patches也需要是按照von Hove的
+    费米面平分的, 而且必须是偶数乘以6
+    '''
+    pat_per_k = len(patches) // 6
+    if numpy.mod(pat_per_k, 2) != 0:
+        raise ValueError("必须是偶数×6")
+    kxv, kyv = pnt.coord[0], pnt.coord[1]
+    ang = get_absolute_angle(kxv, kyv)
+    #首先看这个点是不是在nesting的小六边形中
+    isinner = False
+    kyp = numpy.sqrt(3) * kyv / 2.0
+    eng = -2*numpy.cos(kxv) - 4*numpy.cos(kyp)*numpy.cos(kxv/2)
+    if eng <= 2.0:
+        isinner = True
+    #如果不在中间，那么找到合适的K点
+    gap = numpy.pi / 6
+    idx = ang / gap
+    idx = int(numpy.floor(idx))
+    mline = None
+    kline = (kyv / (kxv+1e-10), 0)
+    targets = None
+    if idx == 1 or idx == 2:
+        #这一条线的方程是 y = - x / sqrt(3) + 2pi / sqrt(3)
+        #这个K点的坐标（2pi/3, 2pi / sqrt(3）)
+        targets = patches[0:pat_per_k]
+        mline = (-1/numpy.sqrt(3), 2*numpy.pi/numpy.sqrt(3))
+        if not isinner:
+            slope = (2*numpy.pi / numpy.sqrt(3) - kyv) / (2*numpy.pi/3 - kxv + 1e-10)
+            inc = numpy.pi * 2 / numpy.sqrt(3) - slope * numpy.pi * 2 / 3
+            kline = (slope, inc)
+        start_patch = 0
+    elif idx == 3 or idx == 4:
+        #这一条线的方程是 y = x / sqrt(3) + 2pi / sqrt(3)
+        #这个K点的坐标（-2pi/3, 2pi / sqrt(3）)
+        targets = patches[pat_per_k:2*pat_per_k]
+        mline = (1/numpy.sqrt(3), 2*numpy.pi/numpy.sqrt(3))
+        if not isinner:
+            slope = (2*numpy.pi / numpy.sqrt(3) - kyv) / (-2*numpy.pi/3 - kxv + 1e-10)
+            inc = numpy.pi * 2 / numpy.sqrt(3) + slope * numpy.pi * 2 / 3
+            kline = (slope, inc)
+        start_patch = pat_per_k
+    elif idx == 5 or idx == 6:
+        #这一条线的方程是 x = -pi
+        #这个K点的坐标（-4pi/3, 0)
+        crsx = -numpy.pi
+        targets = patches[2*pat_per_k:3*pat_per_k]
+        #print(targets)
+        #raise
+        if not isinner:
+            slope = kyv / (kxv + 4*numpy.pi/3 + 1e-10)
+            inc = slope * 4 * numpy.pi / 3
+            kline = (slope, inc)
+        crsy = -kline[0] * numpy.pi + kline[1]
+        idx = [numpy.square(tar.coord[0] - crsx)\
+            + numpy.square(tar.coord[1] - crsy)  for tar in targets]
+        return 2*pat_per_k + numpy.argmin(idx)
+    elif idx == 7 or idx == 8:
+        #这一条线的方程是 y = -x / sqrt(3) - 2pi / sqrt(3)
+        #这个K点的坐标（-2pi/3, -2pi / sqrt(3）)
+        targets = patches[3*pat_per_k:4*pat_per_k]
+        mline = (-1/numpy.sqrt(3), -2*numpy.pi/numpy.sqrt(3))
+        if not isinner:
+            slope = (kyv + 2*numpy.pi / numpy.sqrt(3)) / (kxv + 2*numpy.pi/3 + 1e-10)
+            inc = slope*2*numpy.pi/3 - 2*numpy.pi / numpy.sqrt(3)
+            kline = (slope, inc)
+        start_patch = 3*pat_per_k
+    elif idx == 9 or idx == 10:
+        #这一条线的方程是 y = x / sqrt(3) - 2pi / sqrt(3)
+        #这个K点的坐标（2pi/3, -2pi / sqrt(3）)
+        targets = patches[4*pat_per_k:5*pat_per_k]
+        mline = (1/numpy.sqrt(3), -2*numpy.pi/numpy.sqrt(3))
+        if not isinner:
+            slope = (kyv + 2*numpy.pi / numpy.sqrt(3)) / (kxv - 2*numpy.pi/3 + 1e-10)
+            inc = -2*numpy.pi / numpy.sqrt(3) - slope*2*numpy.pi/3
+            kline = (slope, inc)
+        start_patch = 4*pat_per_k
+    else:
+        #这个时候idx == 11 or idx == 0
+        #这一条线的方程是 x = pi
+        #这个K点的坐标（4pi/3, 0)
+        targets = patches[5*pat_per_k:]
+        crsx = numpy.pi
+        if not isinner:
+            slope = kyv / (kxv - 4*numpy.pi/3 + 1e-10)
+            inc = -slope * 4 * numpy.pi / 3
+            kline = (slope, inc)
+        crsy = kline[0] * numpy.pi + kline[1]
+        idx = [numpy.square(tar.coord[0] - crsx)\
+            + numpy.square(tar.coord[1] - crsy)  for tar in targets]
+        return 5*pat_per_k + numpy.argmin(idx)
+    crsx = (kline[1] - mline[1]) / (mline[0] - kline[0])
+    crsy = mline[0] * crsx + mline[1]
+    idx = [numpy.square(tar.coord[0] - crsx)\
+        + numpy.square(tar.coord[1] - crsy)  for tar in targets]
+    return start_patch + numpy.argmin(idx)

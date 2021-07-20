@@ -54,7 +54,10 @@ def draw_polygons(rects):
     pyplot.show()
 
 
-def draw_components(pts, sgs, rects, sgcc=None, rtcc=None, save='show'):
+def draw_components(
+        pts, sgs, rects,
+        sgcc=None, rtcc=None, save='show',
+        add_text=False):
     '''绘制多组图形\n
     sgcc是线段的color, rtcc是区域的color
     '''
@@ -62,9 +65,11 @@ def draw_components(pts, sgs, rects, sgcc=None, rtcc=None, save='show'):
     #
     xvals = []
     yvals = []
-    for pnt in pts:
+    for idx, pnt in enumerate(pts, 0):
         xvals.append(pnt.coord[0])
         yvals.append(pnt.coord[1])
+        if add_text:
+            pyplot.text(pnt.coord[0]+0.1, pnt.coord[1], 's%s' % idx)
     pyplot.scatter(xvals, yvals, lw=4, c='b')
     #
     colors = ['k', 'y', 'm', 'r', 'g']

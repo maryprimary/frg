@@ -82,7 +82,7 @@ def main():
     parser.add_argument('-p', '--patches', type=int, required=True, help='patches number')
     parser.add_argument('-d', '--disp', type=str, default='square', help='dispersion')
     parser.add_argument('-m', '--mesh', type=int, default=50, help='triangles number')
-    parser.add_argument('--prefix', type=str, default='scripts/square', help='saved file prefix')
+    parser.add_argument('--prefix', type=str, default='scripts/square/square', help='saved file prefix')
     args = parser.parse_args()
     print('色散 ', args.disp)
     print('patch数量', args.patches)

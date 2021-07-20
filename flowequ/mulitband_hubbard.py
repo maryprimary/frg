@@ -6,7 +6,7 @@
 import multiprocessing
 import numpy
 from basics import Point, get_procs_num
-from fermi.patches import find_patch, find_patch_mode2
+from fermi.patches import find_patch, find_patch_mode2, find_patch_mode3
 from fermi.surface import const_energy_line_in_patches
 from fermi.multiband_bubble import pi_ab_plus_ec, pi_ab_minus_ec
 
@@ -97,7 +97,26 @@ class _Config():
             with multiprocessing.Pool(get_procs_num()) as pool:
                 self._mk4tab = pool.starmap(find_patch, data_list)
             self._mk4tab = numpy.reshape(self._mk4tab, U.shape)
-        else:
+        elif find_mode == 3:
+            print(find_mode)
+            data_list = []
+            idxit = numpy.nditer(U, flags=['multi_index'])
+            step = numpy.minimum(brlu.width, brlu.height) / 10 / self._nps
+            while not idxit.finished:
+                bd1, bd2, bd3, bd4, idx1, idx2, idx3 = idxit.multi_index
+                kv1, kv2, kv3 = mpinfo[bd1, idx1], mpinfo[bd2, idx2], mpinfo[bd3, idx3]
+                kv4 = ksft(ksft(kv1, kv2), Point(-kv3.coord[0], -kv3.coord[1], 1))
+                data_list.append(
+                    (kv4, mpinfo[bd4, :])
+                )
+                #idx4 = find_patch(kv4, mpinfo[bd4, :], mdisp[bd4],\
+                #    mdispgd[bd4], numpy.pi / 2 / self._nps)
+                #self._mk4tab[idxit.multi_index] = idx4
+                idxit.iternext()
+            with multiprocessing.Pool(get_procs_num()) as pool:
+                self._mk4tab = pool.starmap(find_patch_mode3, data_list)
+            self._mk4tab = numpy.reshape(self._mk4tab, U.shape)
+        elif find_mode == 2:
             data_list = []
             idxit = numpy.nditer(U, flags=['multi_index'])
             step = numpy.minimum(brlu.width, brlu.height) / 10 / self._nps
@@ -115,6 +134,8 @@ class _Config():
             with multiprocessing.Pool(get_procs_num()) as pool:
                 self._mk4tab = pool.starmap(find_patch_mode2, data_list)
             self._mk4tab = numpy.reshape(self._mk4tab, U.shape)
+        else:
+            raise ValueError("没有这个mode")
         #for idx1 in range(self._patchnum):
         #    for idx2 in range(self._patchnum):
         #        for idx3 in range(self._patchnum):

@@ -5,9 +5,6 @@ __pycache__
 tests/*
 scripts/*
 !scripts/stripe
-!scripts/square_brillouin.py
-!scripts/square_solution.py
-!scripts/square_solution_multi.py
 !scripts/triangle
 heatmap*/
 scripts/stripe/*
@@ -22,6 +19,20 @@ scripts/triangle/*
 !scripts/triangle/brillouin.py
 !scripts/triangle/solution.py
 !scripts/triangle/visualize.py
+!scripts/square
+scripts/square/*
+!scripts/square/square_brillouin.py
+!scripts/square/square_solution.py
+!scripts/square/square_solution_multi.py
+!scripts/kagome
+scripts/kagome/*
+!scripts/kagome/brillouin.py
+!scripts/kagome/solution.py
+!scripts/avsb
+scripts/avsb/*
+!scripts/avsb/brillouin.py
+!scripts/avsb/solution.py
+!scripts/avsb/visualize.py
 
 
 #性能分析
