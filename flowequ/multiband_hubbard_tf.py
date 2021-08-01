@@ -176,6 +176,17 @@ def precompute_patches():
             PATTRIS[bidx, pat].append(tri)
 
 
+def config_reset_ltris(ltris, ladjs, mlpats):
+    '''重新设置ltris'''
+    global CONFIG, PATTRIS
+    if CONFIG is None:
+        raise RuntimeError('还未初始化')
+    PATTRIS = None
+    CONFIG._ltris = ltris
+    CONFIG._ladjs = ladjs
+    CONFIG._mlpats = mlpats
+
+
 QUICKQPP = None
 
 def precompute_qpp(lval):

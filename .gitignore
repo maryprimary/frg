@@ -24,10 +24,12 @@ scripts/square/*
 !scripts/square/square_brillouin.py
 !scripts/square/square_solution.py
 !scripts/square/square_solution_multi.py
+!scripts/square/solution_tf.py
 !scripts/kagome
 scripts/kagome/*
 !scripts/kagome/brillouin.py
 !scripts/kagome/solution.py
+!scripts/kagome/solution_tf.py
 !scripts/avsb
 scripts/avsb/*
 !scripts/avsb/brillouin.py
